@@ -1,0 +1,14 @@
+<div id="main-container" style="text-align:center">
+  <h1>
+    <a href="https://codingblast.com/asp-net-core-signalr-simple-chat/" target="_new">
+      ASP.NET Core SignalR Chat with Angular
+    </a>
+  </h1>
+
+  <div class="container" *ngIf="messages.length > 0">
+    <div *ngFor="let message of messages">
+      <span>{{message}}</span>
+    </div>
+  </div>
+
+</div>

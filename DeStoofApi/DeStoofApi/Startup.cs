@@ -6,13 +6,18 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Sockets;
+using DeStoofApi.Controllers;
+using DeStoofApi.Services;
+using DeStoofApi.Chatsources;
+using MongoDB.Driver;
 
 namespace DeStoofApi
 {
     public class Startup
     {
+        private string mongoDBConnection = "mongodb+srv://user-1:<password>@destoofbot-cdr2z.mongodb.net/test";      
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -23,6 +28,27 @@ namespace DeStoofApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(options => options.AddPolicy("CorsPolicy", builder => {
+                builder
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .WithOrigins("http://localhost:4200");
+            }));
+
+            var mongoDB = new MongoClient(mongoDBConnection);
+            IMongoDatabase database = mongoDB.GetDatabase("DeStoofBot");
+            services.AddSingleton(database);
+
+            IrcManager irc = new IrcManager();
+
+            services.AddSingleton(irc);
+            services.AddSingleton(new MessageService(database, irc));
+
+            services.AddSignalR();
+            services.AddScoped<ChatController>();
+
+            services.AddScoped<MessageService>();
+
             services.AddMvc();
         }
 
@@ -33,6 +59,13 @@ namespace DeStoofApi
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseCors("CorsPolicy");
+
+            app.UseSignalR(routes => {
+                routes
+                .MapHub<ChatHub>("/chat");                
+            });
 
             app.UseMvc();
         }
