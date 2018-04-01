@@ -7,12 +7,14 @@ namespace DeStoofApi.Chatsources
 {
     public class TwitchSource
     {
-        public string userName;
-        private string channel;
+        private string userName;
+        public string channel;
 
         private TcpClient _tcpClient;
         private StreamReader _inputStream;
         private StreamWriter _outputStream;
+
+        public BackgroundWorker backgroundWorker;
 
         public TwitchSource(string ip, int port, string userName, string password, string channel)
         {
@@ -31,15 +33,28 @@ namespace DeStoofApi.Chatsources
                 _outputStream.WriteLine("USER " + userName + " 8 * :" + userName);
                 _outputStream.WriteLine("JOIN #" + channel);
                 _outputStream.Flush();
+
+                backgroundWorker = new BackgroundWorker
+                {
+                    WorkerReportsProgress = true,
+                    WorkerSupportsCancellation = true
+                };
+
+                backgroundWorker.DoWork += new DoWorkEventHandler(GetMessages);
             }
             catch (SocketException ex)
             {
                 throw new InvalidOperationException("Can't connect to: " + channel, ex);
             }
         }
+        public void Connect()
+        {
+            backgroundWorker.RunWorkerAsync();
+        }
 
         public void Disconnect()
         {
+            backgroundWorker.CancelAsync();
             _outputStream.WriteLine(":" + userName + "!" + userName + "@" + userName + ".tmi.twitch.tv PART #" + channel);
         }
 
@@ -75,7 +90,8 @@ namespace DeStoofApi.Chatsources
             while (!worker.CancellationPending)
             {
                 string message = _inputStream.ReadLine();
-                worker.ReportProgress(0, message);
+                if (!string.IsNullOrEmpty(message))
+                    worker.ReportProgress(0, message);
             }
         }
     }

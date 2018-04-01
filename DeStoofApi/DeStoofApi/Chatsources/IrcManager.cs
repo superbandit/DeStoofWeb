@@ -1,7 +1,8 @@
 ﻿using DeStoofApi.EventArguments;
 using DeStoofApi.Models;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
-
 
 namespace DeStoofApi.Chatsources
 {
@@ -10,34 +11,35 @@ namespace DeStoofApi.Chatsources
         public delegate void MessageReceivedHandler(object sender, MessageReceivedEventArgs args);
         public event MessageReceivedHandler MessageReceived;
 
-        TwitchSource ChatConnection;
-        BackgroundWorker BackgroundWorker;
+        private List<TwitchSource> ChatConnections;
 
         public IrcManager()
         {
-            ChatConnection = new TwitchSource("irc.twitch.tv", 6667, "DeStoofBot", "oauth:md7lxoimmj5x7fc3zoi3ev7i5ii0pg", "destoofpot");
+            ChatConnections = new List<TwitchSource>();
+        }
 
-            BackgroundWorker = new BackgroundWorker
+        public bool StartConnection(string channel)
+        {
+            if (!ChatConnections.Exists(x => x.channel == channel))
             {
-                WorkerReportsProgress = true,
-                WorkerSupportsCancellation = true
-            };
+                var twitchSource = new TwitchSource("irc.twitch.tv", 6667, "DeStoofBot", "oauth:md7lxoimmj5x7fc3zoi3ev7i5ii0pg", channel);
+                ChatConnections.Add(twitchSource);
+                twitchSource.backgroundWorker.ProgressChanged += new ProgressChangedEventHandler(ReceiveMessage);
+                twitchSource.Connect();
 
-            BackgroundWorker.DoWork += new DoWorkEventHandler(ChatConnection.GetMessages);
-            BackgroundWorker.ProgressChanged += new ProgressChangedEventHandler(ReceiveMessage);
-
-            BackgroundWorker.RunWorkerAsync();
+                return true;
+            }
+            return false;
         }
 
-        public void StopConnection()
+        public void StopConnection(string chanel)
         {
-            BackgroundWorker.CancelAsync();
-            ChatConnection.Disconnect();
+            ChatConnections.Find(x => x.channel == chanel).Disconnect();
         }
 
-        public void SendMessage(string message)
+        public void SendMessage(string chanel, string message)
         {
-            ChatConnection.SendPublicChatMessage(message);
+            ChatConnections.Find(x => x.channel == chanel).SendPublicChatMessage(message);
         }
 
         public void ReceiveMessage(object sender, ProgressChangedEventArgs e)
@@ -45,13 +47,13 @@ namespace DeStoofApi.Chatsources
             string message = (string)e.UserState;
             if (message.Contains("PRIVMSG"))
             {
-                ChatMessage chatMessage = DisectMessage(message);
+                ChatMessage chatMessage = CreateChatMessage(message);
 
                 MessageReceived(this, new MessageReceivedEventArgs(chatMessage));
             }
         }
 
-        private ChatMessage DisectMessage(string message)
+        private ChatMessage CreateChatMessage(string message)
         {
             ChatMessage chatMessage = new ChatMessage();
             string[] components = message.Split(' ');
@@ -59,6 +61,9 @@ namespace DeStoofApi.Chatsources
             chatMessage.Channel = components[2].Substring(1);
             chatMessage.User = information[0].Substring(1);
             chatMessage.Message = string.Join(" ", components, 3, components.Length - 3).Substring(1);
+
+            chatMessage.Date = DateTime.Now.ToString();
+            chatMessage.Platform = Enums.Platforms.twitch;
 
             return chatMessage;
         }

@@ -13,19 +13,19 @@ namespace DeStoofApi.Controllers
     [Route("api/chat")]
     public class ChatController : Controller
     {
-        readonly ChatHub _hubService;
-        readonly IrcManager _ircManager;
+        readonly MessageService _MessageService;
 
-        public ChatController(ChatHub hubservice, IrcManager ircManager)
+        public ChatController(MessageService messageService)
         {
-            _hubService = hubservice;
-            _ircManager = ircManager;
+            _MessageService = messageService;
         }
 
-        [HttpPost, Route("send")]
-        public async Task<IActionResult> SendChat(ChatMessage message)
+        [HttpPost, Route("connect/{channel}")]
+        public IActionResult SendChat([FromRoute]string channel)
         {
-            await _hubService.Send(message);
+            bool x = _MessageService.StartConnection(channel);
+            if (!x)
+                return BadRequest("Channel already added");
 
             return Ok();
         }

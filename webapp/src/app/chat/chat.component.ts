@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { HubConnection } from '@aspnet/signalr';
+import { ChatMessage} from './chatMessage';
 
 @Component({
   selector: 'app-chat',
@@ -10,7 +11,7 @@ export class ChatComponent implements OnInit {
 
   private hubConnection: HubConnection;
   message = '';
-  messages: string[] = [];
+  messages: ChatMessage[] = [];
 
   constructor() { }
 
@@ -22,7 +23,8 @@ export class ChatComponent implements OnInit {
       .then(() => console.log('Connection started!'))
       .catch(err => console.log('Error while establishing connection :('));
 
-    this.hubConnection.on('Send', (receivedMessage: string) => {
+    this.hubConnection.on('Send', (receivedMessageString: string) => {
+      const receivedMessage = JSON.parse(receivedMessageString);
       this.messages.push(receivedMessage);
     });
   }

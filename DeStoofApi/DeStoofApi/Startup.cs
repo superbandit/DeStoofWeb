@@ -16,7 +16,7 @@ namespace DeStoofApi
 {
     public class Startup
     {
-        private string mongoDBConnection = "mongodb+srv://user-1:<password>@destoofbot-cdr2z.mongodb.net/test";      
+        private string mongoDBConnection = "mongodb+srv://user-1:redacted@destoofbot-cdr2z.mongodb.net/test";      
 
         public Startup(IConfiguration configuration)
         {
@@ -37,12 +37,10 @@ namespace DeStoofApi
 
             var mongoDB = new MongoClient(mongoDBConnection);
             IMongoDatabase database = mongoDB.GetDatabase("DeStoofBot");
+
             services.AddSingleton(database);
 
-            IrcManager irc = new IrcManager();
-
-            services.AddSingleton(irc);
-            services.AddSingleton(new MessageService(database, irc));
+            services.AddSingleton<IrcManager>();
 
             services.AddSignalR();
             services.AddScoped<ChatController>();
@@ -60,7 +58,7 @@ namespace DeStoofApi
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseCors("CorsPolicy");
+            app.UseCors("CorsPolicy");            
 
             app.UseSignalR(routes => {
                 routes
