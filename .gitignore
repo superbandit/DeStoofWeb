@@ -17,6 +17,11 @@ node_modules/
 *.launch
 .settings/
 *.sublime-workspace
+**/.vs
+
+# IDE - VS
+**/DeStoofApi/obj
+**/DeStoofApi/bin
 
 # IDE - VSCode
 .vscode/*
@@ -42,3 +47,7 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# secrets
+DeStoofApi/DeStoofApi/appsettings.Development.json
+DeStoofApi/DeStoofApi/obj
