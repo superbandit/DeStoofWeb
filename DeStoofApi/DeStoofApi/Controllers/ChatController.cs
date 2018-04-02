@@ -20,12 +20,20 @@ namespace DeStoofApi.Controllers
             _MessageService = messageService;
         }
 
-        [HttpPost, Route("connect/{channel}")]
-        public IActionResult SendChat([FromRoute]string channel)
+        [HttpPost, Route("connectIrc/{channel}")]
+        public IActionResult ConnectToIrc([FromRoute]string channel)
         {
-            bool x = _MessageService.StartConnection(channel);
+            bool x = _MessageService.StartIrcConnection(channel);
             if (!x)
                 return BadRequest("Channel already added");
+
+            return Ok();
+        }
+
+        [HttpPost, Route("connectDiscord/{channel}")]
+        public IActionResult ConnectToDiscord([FromRoute]string channel)
+        {
+            _MessageService.StartDiscordConnection();
 
             return Ok();
         }

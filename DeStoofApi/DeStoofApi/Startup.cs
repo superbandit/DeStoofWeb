@@ -15,9 +15,7 @@ using MongoDB.Driver;
 namespace DeStoofApi
 {
     public class Startup
-    {
-        private string mongoDBConnection = "mongodb+srv://user-1:redacted@destoofbot-cdr2z.mongodb.net/test";      
-
+    {  
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -28,6 +26,7 @@ namespace DeStoofApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
             services.AddCors(options => options.AddPolicy("CorsPolicy", builder => {
                 builder
                 .AllowAnyMethod()
@@ -35,17 +34,17 @@ namespace DeStoofApi
                 .WithOrigins("http://localhost:4200");
             }));
 
-            var mongoDB = new MongoClient(mongoDBConnection);
+            var mongoDB = new MongoClient($"{Configuration["Secure:DataBase"]}");
             IMongoDatabase database = mongoDB.GetDatabase("DeStoofBot");
 
             services.AddSingleton(database);
 
             services.AddSingleton<IrcManager>();
+            services.AddSingleton<DiscordManager>();
+            services.AddSingleton<MessageService>();
 
             services.AddSignalR();
             services.AddScoped<ChatController>();
-
-            services.AddScoped<MessageService>();
 
             services.AddMvc();
         }
