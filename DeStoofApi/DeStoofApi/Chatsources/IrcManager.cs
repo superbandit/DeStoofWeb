@@ -1,5 +1,6 @@
 ﻿using DeStoofApi.EventArguments;
 using DeStoofApi.Models;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,10 +12,14 @@ namespace DeStoofApi.Chatsources
         public delegate void MessageReceivedHandler(object sender, MessageReceivedEventArgs args);
         public event MessageReceivedHandler MessageReceived;
 
+        readonly IConfiguration Config;
+
         private List<TwitchSource> ChatConnections;
 
-        public IrcManager()
+        public IrcManager(IConfiguration config)
         {
+            Config = config;
+
             ChatConnections = new List<TwitchSource>();
         }
 
@@ -22,7 +27,7 @@ namespace DeStoofApi.Chatsources
         {
             if (!ChatConnections.Exists(x => x.channel == channel))
             {
-                var twitchSource = new TwitchSource("irc.twitch.tv", 6667, "DeStoofBot", "oauth:md7lxoimmj5x7fc3zoi3ev7i5ii0pg", channel);
+                var twitchSource = new TwitchSource("irc.twitch.tv", 6667, "DeStoofBot", $"{Config["Secure:TwitchToken"]}", channel);
                 ChatConnections.Add(twitchSource);
                 twitchSource.backgroundWorker.ProgressChanged += new ProgressChangedEventHandler(ReceiveMessage);
                 twitchSource.Connect();
