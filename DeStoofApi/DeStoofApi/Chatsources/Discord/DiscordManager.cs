@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -19,8 +20,14 @@ namespace DeStoofApi.Chatsources
         public DiscordSocketClient client;
         private CommandService commands;
         private IServiceProvider services;
+        readonly IConfiguration Config;
 
         public SocketTextChannel channel;
+
+        public DiscordManager(IConfiguration config)
+        {
+            Config = config;
+        }
 
 
         public async Task RunBotAsync()
@@ -33,7 +40,7 @@ namespace DeStoofApi.Chatsources
                 .AddSingleton(commands)
                 .BuildServiceProvider();
 
-            string botToken = "NDE2Njk4NTk3OTIxNTIxNjc1.DXIQjw.MQ5hZ4b3GV4St1mDEM-573tnUF4";
+            string botToken = $"{Config["Secure:Discordtoken"]}";
 
             //event subscriptions
             client.Log += Log;
