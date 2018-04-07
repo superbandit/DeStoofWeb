@@ -1,40 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using DeStoofApi.Services;
-using DeStoofApi.Chatsources;
-using DeStoofApi.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DeStoofApi.Controllers
 {
+    [Authorize]
     [Route("api/chat")]
     public class ChatController : Controller
     {
-        readonly MessageService _MessageService;
+        private readonly MessageService _messageService;
 
         public ChatController(MessageService messageService)
         {
-            _MessageService = messageService;
+            _messageService = messageService;
         }
 
         [HttpPost, Route("connectIrc/{channel}")]
         public IActionResult ConnectToIrc([FromRoute]string channel)
         {
-            bool x = _MessageService.StartIrcConnection(channel);
+            bool x = _messageService.StartIrcConnection(channel);
             if (!x)
                 return BadRequest("Channel already added");
 
             return Ok();
         }
 
-        [HttpPost, Route("connectDiscord/{channel}")]
-        public IActionResult ConnectToDiscord([FromRoute]string channel)
+        [HttpPost, Route("startDiscord")]
+        public async Task<IActionResult> ConnectToDiscord([FromRoute]string channel)
         {
-            _MessageService.StartDiscordConnection();
+            bool x = await _messageService.StartDiscordConnection();
+            if (!x)
+                return BadRequest("Bot already active");
 
+            return Ok();
+        }     
+
+        [AllowAnonymous]
+        [HttpGet, Route("ping")]
+        public IActionResult Ping()
+        {
             return Ok();
         }
     }

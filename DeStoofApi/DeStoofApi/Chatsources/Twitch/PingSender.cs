@@ -4,10 +4,10 @@ namespace DeStoofApi.Chatsources
 {
     public class PingSender
     {
-        private TwitchSource _irc;
+        private readonly TwitchSource _irc;
         private Thread pingSender;
 
-        private bool active = false;
+        private bool active;
 
         public PingSender(TwitchSource irc)
         {
