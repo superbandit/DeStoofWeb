@@ -51,3 +51,5 @@ Thumbs.db
 # secrets
 DeStoofApi/DeStoofApi/appsettings.Development.json
 DeStoofApi/DeStoofApi/obj
+/DeStoofApi/DeStoofApi/appsettings.Staging.json
+/DeStoofApi/DeStoofApi/appsettings.Production.json

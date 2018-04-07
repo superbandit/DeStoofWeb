@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeStoofApi", "DeStoofApi\DeStoofApi.csproj", "{24D4C7FB-5447-499E-8657-C7C9C3F077A1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeStoofApi", "DeStoofApi\DeStoofApi.csproj", "{24D4C7FB-5447-499E-8657-C7C9C3F077A1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

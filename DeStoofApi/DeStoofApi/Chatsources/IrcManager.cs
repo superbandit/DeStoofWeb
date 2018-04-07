@@ -29,7 +29,7 @@ namespace DeStoofApi.Chatsources
             {
                 var twitchSource = new TwitchSource("irc.twitch.tv", 6667, "DeStoofBot", $"{Config["Secure:TwitchToken"]}", channel);
                 ChatConnections.Add(twitchSource);
-                twitchSource.backgroundWorker.ProgressChanged += new ProgressChangedEventHandler(ReceiveMessage);
+                twitchSource.backgroundWorker.ProgressChanged += ReceiveMessage;
                 twitchSource.Connect();
 
                 return true;

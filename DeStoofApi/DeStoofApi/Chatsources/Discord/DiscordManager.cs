@@ -9,6 +9,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using DeStoofApi.EventArguments;
 using DeStoofApi.Models;
+using System.Collections.Generic;
 
 namespace DeStoofApi.Chatsources
 {
@@ -22,7 +23,7 @@ namespace DeStoofApi.Chatsources
         private IServiceProvider services;
         readonly IConfiguration Config;
 
-        public SocketTextChannel channel;
+        public List<SocketGuild> Guilds = new List<SocketGuild>();
 
         public DiscordManager(IConfiguration config)
         {
@@ -30,8 +31,10 @@ namespace DeStoofApi.Chatsources
         }
 
 
-        public async Task RunBotAsync()
+        public async Task<bool> RunBotAsync()
         {
+            if (client != null)
+                return false;
             client = new DiscordSocketClient();
             commands = new CommandService();
 
@@ -49,12 +52,14 @@ namespace DeStoofApi.Chatsources
             await client.LoginAsync(TokenType.Bot, botToken);
             await client.StartAsync();
             client.Ready += ClientReady;
-            //await Task.Delay(-1);
+
+            return true;
         }
 
         private Task ClientReady()
         {
-            channel = client.GetChannel(416714064283303956) as SocketTextChannel;
+            foreach (SocketGuild guild in client.Guilds)
+                Guilds.Add(guild);
             return Task.FromResult(0);
         }
 
@@ -88,7 +93,7 @@ namespace DeStoofApi.Chatsources
 
             int argPos = 0;
 
-            if (message.HasStringPrefix("!", ref argPos) && message.Channel == channel)
+            if (message.HasStringPrefix("!", ref argPos))
             {
                 SocketCommandContext context = new SocketCommandContext(client, message);
 
@@ -100,9 +105,9 @@ namespace DeStoofApi.Chatsources
             }
         }
 
-        public async void SendDiscordMessage(string message)
+        public async void SendDiscordMessage(ulong channelNumber, string message)
         {
-            SocketTextChannel channel = client.GetChannel(416714064283303956) as SocketTextChannel;
+            SocketTextChannel channel = client.GetChannel(channelNumber) as SocketTextChannel;
             await channel.SendMessageAsync(message);
         }
     }

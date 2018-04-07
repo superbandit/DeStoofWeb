@@ -36,9 +36,9 @@ namespace DeStoofApi.Services
             return IrcManager.StartConnection(channel);
         }
 
-        public async Task StartDiscordConnection()
+        public async Task<bool> StartDiscordConnection()
         {
-            await DiscordManager.RunBotAsync();
+            return await DiscordManager.RunBotAsync();
             //TODO what channel?
         }
 

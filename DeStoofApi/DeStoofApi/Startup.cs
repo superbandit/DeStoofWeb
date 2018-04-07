@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Sockets;
+using Microsoft.AspNetCore.Identity;
 using DeStoofApi.Controllers;
 using DeStoofApi.Services;
 using DeStoofApi.Chatsources;
@@ -34,10 +30,22 @@ namespace DeStoofApi
                 .WithOrigins("http://localhost:4200");
             }));
 
-            var mongoDB = new MongoClient($"{Configuration["Secure:DataBase"]}");
-            IMongoDatabase database = mongoDB.GetDatabase("DeStoofBot");
-
+            var mongoDb = new MongoClient($"{Configuration["Secure:DataBase"]}");
+            IMongoDatabase database = mongoDb.GetDatabase("DeStoofBot");
             services.AddSingleton(database);
+
+            services.AddIdentityWithMongoStores($"{Configuration["Secure:DataBase"]}")
+                .AddDefaultTokenProviders();
+
+            services.Configure<IdentityOptions>(options =>
+            {
+                options.Password.RequireDigit = false;
+                options.Password.RequiredLength = 6;
+                options.Password.RequiredUniqueChars = 0;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+            });
 
             services.AddSingleton<IrcManager>();
             services.AddSingleton<DiscordManager>();
@@ -55,7 +63,10 @@ namespace DeStoofApi
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-            }
+            }           
+            app.UseStaticFiles();
+
+            app.UseAuthentication();
 
             app.UseCors("CorsPolicy");            
 
@@ -65,6 +76,8 @@ namespace DeStoofApi
             });
 
             app.UseMvc();
+
+            app.ApplicationServices.GetService<MessageService>().StartDiscordConnection().GetAwaiter().GetResult();
         }
     }
 }

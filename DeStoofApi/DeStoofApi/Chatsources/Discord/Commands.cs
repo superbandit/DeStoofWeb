@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using static DeStoofApi.Models.Enums;
@@ -22,6 +23,7 @@ namespace DeStoofApi.Chatsources
         [Command("hugify")]
         public async Task HugifyAsync(params string[] text)
         {
+            text = text.Select(t => t.ToLower()).ToArray();
             string final = "";
             foreach(string t in text)
             {
