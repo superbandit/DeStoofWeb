@@ -1,11 +1,16 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System;
+using DeStoofApi.Chatsources.Discord;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
 using DeStoofApi.Controllers;
 using DeStoofApi.Services;
-using DeStoofApi.Chatsources;
+using DeStoofApi.Chatsources.Twitch;
+using DeStoofApi.Hubs;
+using Discord.Commands;
+using Discord.WebSocket;
 using MongoDB.Driver;
 
 namespace DeStoofApi
@@ -47,11 +52,15 @@ namespace DeStoofApi
                 options.Password.RequireUppercase = false;
             });
 
-            services.AddSingleton<IrcManager>();
+            services.AddSignalR();
+
+            services.AddSingleton<DiscordSocketClient>();
+            services.AddSingleton<CommandService>();
+            services.AddSingleton<TwitchManager>();
             services.AddSingleton<DiscordManager>();
             services.AddSingleton<MessageService>();
+            services.AddSingleton<IServiceProvider>(services.BuildServiceProvider());
 
-            services.AddSignalR();
             services.AddScoped<ChatController>();
 
             services.AddMvc();
@@ -78,6 +87,7 @@ namespace DeStoofApi
             app.UseMvc();
 
             app.ApplicationServices.GetService<MessageService>().StartDiscordConnection().GetAwaiter().GetResult();
+            app.ApplicationServices.GetService<MessageService>().StartTwitchConnection();
         }
     }
 }

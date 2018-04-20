@@ -59,9 +59,8 @@ namespace DeStoofApi.Controllers
         }
 
         [HttpPost, Route("test")]
-        public async Task<IActionResult> Authorize()
+        public IActionResult Ping()
         {
-            var name = User.Identity.Name;
             return Ok();
         }
     }

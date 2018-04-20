@@ -1,10 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace DeStoofApi.Models
+namespace DeStoofApi.Models.ApplicationUser
 {
     public class ApplicationUser : IdentityUser
     {

@@ -16,10 +16,10 @@ namespace DeStoofApi.Controllers
             _messageService = messageService;
         }
 
-        [HttpPost, Route("connectIrc/{channel}")]
-        public IActionResult ConnectToIrc([FromRoute]string channel)
+        [HttpPost, Route("connectTwitch/{channel}")]
+        public IActionResult ConnectToTwitch([FromRoute]string channel)
         {
-            bool x = _messageService.StartIrcConnection(channel);
+            bool x = _messageService.JoinTwitchChannel(channel);
             if (!x)
                 return BadRequest("Channel already added");
 
