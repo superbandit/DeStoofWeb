@@ -1,9 +1,8 @@
-﻿using System;
-using DeStoofApi.Models;
+﻿using DeStoofApi.Models;
 
-namespace DeStoofApi.EventArguments
+namespace DeStoofApi.EventArgs
 {
-    public class MessageReceivedEventArgs : EventArgs
+    public class MessageReceivedEventArgs : System.EventArgs
     {
         public ChatMessage ChatMessage { get; set; }
 

@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR;
 using DeStoofApi.Models;
+using Microsoft.AspNetCore.SignalR;
 
-namespace DeStoofApi.Services
+namespace DeStoofApi.Hubs
 {
     public class ChatHub : Hub
     {

@@ -1,12 +1,16 @@
-﻿namespace DeStoofApi.Models
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace DeStoofApi.Models
 {
     public class Enums
     {
         public enum Platforms
         {
-            twitch,
-            discord
+            Twitch,
+            Discord
         }
+
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
         public enum Numbers
         {
             zero,

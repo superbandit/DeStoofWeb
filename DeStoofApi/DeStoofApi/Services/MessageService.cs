@@ -1,65 +1,76 @@
-﻿using DeStoofApi.Chatsources;
-using DeStoofApi.EventArguments;
-using DeStoofApi.Models;
+﻿using DeStoofApi.Models;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using System;
 using System.Threading.Tasks;
+using DeStoofApi.Chatsources.Discord;
+using DeStoofApi.Chatsources.Twitch;
+using DeStoofApi.EventArgs;
+using DeStoofApi.Hubs;
+using DeStoofApi.Models.Guilds;
 
 namespace DeStoofApi.Services
 {
     public class MessageService
     {
-        IHubContext<ChatHub> ChatHub;
-        IrcManager IrcManager;
-        DiscordManager DiscordManager;
-        IMongoDatabase Database;
-        IMongoCollection<BsonDocument> Messages;
+        private readonly IHubContext<ChatHub> _chatHub;
+        private readonly TwitchManager _twitchManager;
+        private readonly DiscordManager _discordManager;
+        private readonly IMongoCollection<ChatMessage> _messages;
+        private readonly IMongoCollection<GuildSettings> _guildSettings;
 
-        public MessageService(IMongoDatabase database, IrcManager ircManager, DiscordManager discordManager, IHubContext<ChatHub> chatHub)
+        public MessageService(IMongoDatabase database, TwitchManager twitchManager, DiscordManager discordManager, IHubContext<ChatHub> chatHub)
         {
-            Database = database;
-            Messages = Database.GetCollection<BsonDocument>("Messages");
+            var database1 = database;
+            _messages = database1.GetCollection<ChatMessage>("Messages");
+            _guildSettings = database1.GetCollection<GuildSettings>("guildSettings");
 
-            IrcManager = ircManager;
-            IrcManager.MessageReceived += OnIrcMessageReceived;
+            _twitchManager = twitchManager;
+            _twitchManager.MessageReceived += OnTwitchMessageReceived;
 
-            DiscordManager = discordManager;
-            DiscordManager.MessageReceived += OnDiscordMessageReceived;
+            _discordManager = discordManager;
+            _discordManager.MessageReceived += OnDiscordMessageReceived;
 
-            ChatHub = chatHub;
+            _chatHub = chatHub;
         }
 
-        public bool StartIrcConnection(string channel)
+        public void StartTwitchConnection()
         {
-            return IrcManager.StartConnection(channel);
+            _twitchManager.Start();
+        }
+
+        public bool JoinTwitchChannel(string channel)
+        {
+            return _twitchManager.JoinTwitchChannel(channel);
         }
 
         public async Task<bool> StartDiscordConnection()
         {
-            return await DiscordManager.RunBotAsync();
-            //TODO what channel?
+            return await _discordManager.RunBotAsync();
         }
 
-        private async void OnIrcMessageReceived(object sender, MessageReceivedEventArgs args)
+        private async void OnTwitchMessageReceived(object sender, MessageReceivedEventArgs args)
         {
             ChatMessage chatMessage = args.ChatMessage;
 
-            await ChatHub.Clients.All.SendAsync("Send", chatMessage.ToJson());
+            var filter = Builders<GuildSettings>.Filter.Eq(g => g.TwitchSettings.TwitchChannel, chatMessage.Channel);
+            var settings = await (await _guildSettings.FindAsync(filter)).FirstOrDefaultAsync();
 
-            BsonDocument chatMessageBson = chatMessage.ToBsonDocument();
-            Messages.InsertOne(chatMessageBson);
+            await _chatHub.Clients.All.SendAsync("Send", chatMessage.ToJson());
+
+            if (settings.TwitchSettings.DiscordChannel != null)
+                _discordManager.SendDiscordMessage((ulong) settings.TwitchSettings.DiscordChannel, chatMessage.Message);
+
+            _messages.InsertOne(chatMessage);
         }
 
         private async void OnDiscordMessageReceived(object sender, MessageReceivedEventArgs args)
         {
             ChatMessage chatMessage = args.ChatMessage;
 
-            await ChatHub.Clients.All.SendAsync("Send", chatMessage.ToJson());
+            await _chatHub.Clients.All.SendAsync("Send", chatMessage.ToJson());
 
-            BsonDocument chatMessageBson = chatMessage.ToBsonDocument();
-            Messages.InsertOne(chatMessageBson);
+            _messages.InsertOne(chatMessage);
         }
     }
 }
