@@ -13,7 +13,7 @@
       "launchBrowser": true,
       "launchUrl": "api/chat",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Production"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "DeStoofApi": {
@@ -21,7 +21,7 @@
       "launchBrowser": true,
       "launchUrl": "api/chat",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Production"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "applicationUrl": "http://localhost:5000/"
     }

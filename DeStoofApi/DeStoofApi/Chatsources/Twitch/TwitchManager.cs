@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using DeStoofApi.EventArgs;
-using DeStoofApi.Models;
+using DeStoofApi.Models.ChatMessages;
 using Microsoft.Extensions.Configuration;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
@@ -16,6 +17,8 @@ namespace DeStoofApi.Chatsources.Twitch
 
         TwitchClient _client;
         private ConnectionCredentials credentials;
+
+        private List<string> connectedChannels = new List<string>();
 
         public TwitchManager(IConfiguration config)
         {
@@ -35,9 +38,22 @@ namespace DeStoofApi.Chatsources.Twitch
 
         public bool JoinTwitchChannel(string channel)
         {
-            _client.JoinChannel(channel);
+            if (connectedChannels.Contains(channel)) return false;
 
+            connectedChannels.Add(channel);
+            _client.JoinChannel(channel);
             return true;
+
+        }
+
+        public bool LeaveTwitchChannel(string channel)
+        {
+            if (!connectedChannels.Contains(channel)) return false;
+
+            connectedChannels.Remove(channel);
+            _client.LeaveChannel(channel);
+            return true;
+
         }
 
         private void OnMessageReceived(object sender, OnMessageReceivedArgs e)
@@ -48,16 +64,15 @@ namespace DeStoofApi.Chatsources.Twitch
 
             //Handle twitch commands
 
-            Models.ChatMessage chatMessage = new Models.ChatMessage
+            TwitchChatMessage chatMessage = new TwitchChatMessage
             {
                 Channel = message.Channel,
-                Date = DateTime.Now.ToString(),
+                Date = DateTime.Now,
                 Message = message.Message,
-                Platform = Enums.Platforms.Twitch,
                 User = message.DisplayName
             };
 
-            if (MessageReceived != null) MessageReceived(this, new MessageReceivedEventArgs(chatMessage));
+            MessageReceived?.Invoke(this, new MessageReceivedEventArgs(chatMessage));
         }
     }
 }
