@@ -1,64 +1,133 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
+using DeStoofApi.Models.ChatMessages;
+using DeStoofApi.Models.Guilds;
 using Discord;
 using Discord.Commands;
-using static DeStoofApi.Models.Enums;
+using Microsoft.Extensions.Configuration;
+using MongoDB.Driver;
 
 namespace DeStoofApi.Chatsources.Discord
 {
     public class Commands : ModuleBase<SocketCommandContext>
     {
-        [Command("commands")]
-        public async Task CommandsAsync()
+        private readonly CommandService _service;
+        private readonly DiscordManager _discordManager;
+
+        private readonly IMongoCollection<GuildSettings> _guildSettings;
+        private readonly IMongoCollection<TwitchChatMessage> _twitchChatMessages;
+        private readonly IMongoCollection<DiscordChatMessage> _discordChatMessages;
+
+        public Commands(IMongoDatabase mongoDatabase, CommandService service, DiscordManager discordManager, IConfiguration config)
         {
-            await ReplyAsync("!hugify [text] - Maak je text groot!");
+            _service = service;
+            _discordManager = discordManager;
+            _guildSettings = mongoDatabase.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
+            _twitchChatMessages = mongoDatabase.GetCollection<ChatMessage>(config["Secure:Messages"]).OfType<TwitchChatMessage>();
+            _discordChatMessages = mongoDatabase.GetCollection<ChatMessage>(config["Secure:Messages"]).OfType<DiscordChatMessage>();
         }
 
-        [Command("pleh")]
-        public async Task PlehAsync()
+        [Command("Help")]
+        [Summary("Lists all available commands.")]
+        public async Task CommandsAsync([Summary("Command of which help should be displayed."), Remainder] string command = null)
         {
-            await ReplyAsync("Wtf lars...");
-        }
+            var settings = await GetGuildSettings();
 
-        [Command("hugify")]
-        public async Task HugifyAsync(params string[] text)
-        {
-            text = text.Select(t => t.ToLower()).ToArray();
-            string final = "";
-            foreach(string t in text)
-            {
-                foreach(char c in t)
+            var embedBuilder = new EmbedBuilder
+            {               
+                Color = new Color(10, 200, 10),
+                Footer = new EmbedFooterBuilder
                 {
-                    if (char.IsDigit(c))
-                    {
-                        int.TryParse(c.ToString(), out int x);
-                        final += $":{((Numbers)x).ToString()}:";
-                    }
-                    else if (char.IsLetter(c))
-                        final += $":regional_indicator_{c}:";
+                    Text = $"Made by Superbandit | [{DateTime.Now.ToShortTimeString()}]"
                 }
-                final += "   ";
+            };
+
+            if (command == null)
+            {
+                embedBuilder.Title = "Commands for DeStoofBot";
+                foreach (var c in _service.Commands)
+                {
+                    embedBuilder.AddField(a =>
+                    {
+                        a.Name = $"{settings.CommandPrefix}{c.Aliases.FirstOrDefault()}";
+                        a.Value = c.Summary ?? "Undocumented";
+                    });
+
+                }
             }
-            await ReplyAsync(final);
+            else
+            {
+                var commandFound = _service.Commands.FirstOrDefault(c => c.Aliases.Contains(command));
+
+                if (commandFound == null)
+                {
+                    await ReplyAsync("Command could not be found.");
+                    return;
+                }
+
+                embedBuilder.Title = $"Help for {command}";
+                embedBuilder.Description = $"{commandFound.Summary} \n" +
+                                           $"{(commandFound.Parameters.Count > 0 ? "Parameters:" : "No parameters")}";
+
+                foreach (var param in commandFound.Parameters)
+                {
+                    embedBuilder.AddField(f =>
+                    {
+                        f.Name = param.Name;
+                        f.Value = $"{(param.IsOptional? "(optional)" : "")} {param.Summary}";
+                    });
+                }
+            }
+
+            var eb = embedBuilder.Build();
+            await ReplyAsync("", false, eb);
         }
 
-        [Command("vanish")]
-        [Summary("Remove all user's messages")]
-        [RequireUserPermission(GuildPermission.KickMembers)]
-        public async Task VanishAsync([Remainder] IUser user)
+        [Command("LeaveServer")]
+        [Summary("Leaves the current server")]
+        [RequireUserPermission(GuildPermission.ManageGuild)]
+        public async Task LeaveServer()
         {
-            if (user == null)
-                await ReplyAsync("Please specify a user");
+            await ReplyAsync("Cya!");
+            await _discordManager.PartGuild(Context.Guild.Id);
+        }
 
-            await ReplyAsync("Bye Bye messages :wave:");
+        [Command("DeStoofBot SetPrefix")]
+        [Summary("Sets the prefix for all commands for DeStoofBot.")]
+        public async Task SetPrefixAsync([Summary("The prefix to be set.")]string prefix)
+        {
+            var update = Builders<GuildSettings>.Update.Set(g => g.CommandPrefix, prefix);
+            await _guildSettings.FindOneAndUpdateAsync(g => g.GuildId == Context.Guild.Id, update);
+            await ReplyAsync($"Command prefix has been set to {prefix}");
+        }
 
-            var messages = await Context.Channel.GetMessagesAsync().FlattenAsync();
+        [Command("ResetSettings")]
+        [Summary("Resets all saved settings.")]
+        [RequireUserPermission(GuildPermission.ManageGuild)]
+        public async Task ResetSettingsAsync()
+        {
+            await _guildSettings.ReplaceOneAsync(g => g.GuildId == Context.Guild.Id,
+                new GuildSettings { GuildId = Context.Guild.Id }, new UpdateOptions { IsUpsert = true });
+            await ReplyAsync("Settings have been reset!");
+        }
 
-            foreach (var message in messages)
-            {
-                if (message.Author == user)
-                    await message.DeleteAsync();
-            }
+        [Command("Messages")]
+        [Summary("Shows how many messages have been sent since the bot joined the server.")]
+        public async Task GetMessagesAsync()
+        {
+            var settings = await GetGuildSettings();
+
+            var discordMessages = await _discordChatMessages.CountAsync(m => m.GuildId == Context.Guild.Id);
+            var twitchMessages = await _twitchChatMessages.CountAsync(m => m.Channel == settings.TwitchSettings.TwitchChannel);
+
+            await ReplyAsync(
+                $"{discordMessages} discord messages and {twitchMessages} twitch messages have been sent since this bot joined the channel.");
+        }
+
+        private async Task<GuildSettings> GetGuildSettings()
+        {
+            return await(await _guildSettings.FindAsync(s => s.GuildId == Context.Guild.Id)).FirstOrDefaultAsync();
         }
     }
 }

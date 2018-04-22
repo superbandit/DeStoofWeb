@@ -6,9 +6,9 @@ using Microsoft.Extensions.Configuration;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using DeStoofApi.Models;
 using System.Collections.Generic;
 using DeStoofApi.EventArgs;
+using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Guilds;
 using MongoDB.Driver;
 
@@ -33,7 +33,7 @@ namespace DeStoofApi.Chatsources.Discord
             _client = client;
             _commandService = commandService;
             _serviceProvider = serviceProvider;
-            _guildSettings = mongoDatabase.GetCollection<GuildSettings>("guildSettings");
+            _guildSettings = mongoDatabase.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
         }
 
 
@@ -42,7 +42,7 @@ namespace DeStoofApi.Chatsources.Discord
             if (_client == null)
                 return false;
 
-            string botToken = $"{_config["Secure:Discordtoken"]}";
+            string botToken = _config["Secure:Discordtoken"];
 
             //event subscriptions
             _client.Log += Log;
@@ -59,12 +59,8 @@ namespace DeStoofApi.Chatsources.Discord
         {
             Guilds.Add(arg);
 
-            GuildSettings guildSettings = new GuildSettings
-            {
-                GuildId = arg.Id
-            };
-
-            await _guildSettings.InsertOneAsync(guildSettings);
+            await _guildSettings.ReplaceOneAsync(g => g.GuildId == arg.Id,
+                new GuildSettings { GuildId = arg.Id }, new UpdateOptions { IsUpsert = true });
         }
 
         private Task ClientReady()
@@ -81,7 +77,7 @@ namespace DeStoofApi.Chatsources.Discord
             return Task.CompletedTask;
         }
 
-        public async Task RegisterCommandsAsync()
+        private async Task RegisterCommandsAsync()
         {
             _client.MessageReceived += HandleMessageAsync;
 
@@ -91,22 +87,30 @@ namespace DeStoofApi.Chatsources.Discord
         private async Task HandleMessageAsync(SocketMessage arg)
         {
             if (!(arg is SocketUserMessage message) || message.Author.IsBot) return;
+            if (!(message.Channel is SocketGuildChannel channel)) return;
 
             if (MessageReceived == null)
                 return;
 
-            MessageReceived(this, new MessageReceivedEventArgs(new ChatMessage
+            MessageReceived(this, new MessageReceivedEventArgs(new DiscordChatMessage
             {
-                Platform = Enums.Platforms.Discord,
-                User = ((IGuildUser) message.Author).Nickname,
-                Channel = message.Channel.Name,
+                User = ((IGuildUser) message.Author).Nickname ?? message.Author.Username,
+                UserId = message.Author.Id,
+                GuildId = channel.Guild.Id,
                 Message = message.Content,
-                Date = DateTime.Now.ToString()
+                Date = DateTime.Now
             }));
+
+            var settings = await (await _guildSettings.FindAsync(g => g.GuildId == channel.Guild.Id)).FirstOrDefaultAsync();
+            if (settings == null)
+            {
+                settings = new GuildSettings { GuildId = channel.Guild.Id};
+                await _guildSettings.InsertOneAsync(settings);
+            }
 
             int argPos = 0;
 
-            if (message.HasStringPrefix("!", ref argPos))
+            if (message.HasStringPrefix(settings.CommandPrefix, ref argPos))
             {
                 SocketCommandContext context = new SocketCommandContext(_client, message);
 
@@ -118,10 +122,17 @@ namespace DeStoofApi.Chatsources.Discord
             }
         }
 
-        public async void SendDiscordMessage(ulong channelNumber, string message)
+        public async void SendDiscordMessage(ulong channelNumber, ChatMessage message)
         {
             SocketTextChannel channel = _client.GetChannel(channelNumber) as SocketTextChannel;
-            if (channel != null) await channel.SendMessageAsync(message);
+
+            string toSend = $"**{message.User}**: {message.Message}";
+            if (channel != null) await channel.SendMessageAsync(toSend);
+        }
+
+        public async Task PartGuild(ulong guildId)
+        {
+            await _client.GetGuild(guildId).LeaveAsync();
         }
     }
 }

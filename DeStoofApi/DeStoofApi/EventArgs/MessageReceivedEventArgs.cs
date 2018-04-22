@@ -1,4 +1,4 @@
-﻿using DeStoofApi.Models;
+﻿using DeStoofApi.Models.ChatMessages;
 
 namespace DeStoofApi.EventArgs
 {

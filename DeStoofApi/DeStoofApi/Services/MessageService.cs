@@ -1,5 +1,4 @@
-﻿using DeStoofApi.Models;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Threading.Tasks;
@@ -7,7 +6,9 @@ using DeStoofApi.Chatsources.Discord;
 using DeStoofApi.Chatsources.Twitch;
 using DeStoofApi.EventArgs;
 using DeStoofApi.Hubs;
+using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Guilds;
+using Microsoft.Extensions.Configuration;
 
 namespace DeStoofApi.Services
 {
@@ -19,11 +20,11 @@ namespace DeStoofApi.Services
         private readonly IMongoCollection<ChatMessage> _messages;
         private readonly IMongoCollection<GuildSettings> _guildSettings;
 
-        public MessageService(IMongoDatabase database, TwitchManager twitchManager, DiscordManager discordManager, IHubContext<ChatHub> chatHub)
+        public MessageService(IMongoDatabase database, TwitchManager twitchManager, DiscordManager discordManager, IHubContext<ChatHub> chatHub, IConfiguration config)
         {
             var database1 = database;
-            _messages = database1.GetCollection<ChatMessage>("Messages");
-            _guildSettings = database1.GetCollection<GuildSettings>("guildSettings");
+            _messages = database1.GetCollection<ChatMessage>(config["Secure:Messages"]);
+            _guildSettings = database1.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
 
             _twitchManager = twitchManager;
             _twitchManager.MessageReceived += OnTwitchMessageReceived;
@@ -44,6 +45,12 @@ namespace DeStoofApi.Services
             return _twitchManager.JoinTwitchChannel(channel);
         }
 
+        public bool LeaveTwitchChannel(string channel)
+        {
+            return _twitchManager.LeaveTwitchChannel(channel);
+        }
+
+
         public async Task<bool> StartDiscordConnection()
         {
             return await _discordManager.RunBotAsync();
@@ -51,7 +58,7 @@ namespace DeStoofApi.Services
 
         private async void OnTwitchMessageReceived(object sender, MessageReceivedEventArgs args)
         {
-            ChatMessage chatMessage = args.ChatMessage;
+            if (!(args.ChatMessage is TwitchChatMessage chatMessage)) return;
 
             var filter = Builders<GuildSettings>.Filter.Eq(g => g.TwitchSettings.TwitchChannel, chatMessage.Channel);
             var settings = await (await _guildSettings.FindAsync(filter)).FirstOrDefaultAsync();
@@ -59,7 +66,7 @@ namespace DeStoofApi.Services
             await _chatHub.Clients.All.SendAsync("Send", chatMessage.ToJson());
 
             if (settings.TwitchSettings.DiscordChannel != null)
-                _discordManager.SendDiscordMessage((ulong) settings.TwitchSettings.DiscordChannel, chatMessage.Message);
+                _discordManager.SendDiscordMessage((ulong) settings.TwitchSettings.DiscordChannel, chatMessage);
 
             _messages.InsertOne(chatMessage);
         }
