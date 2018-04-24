@@ -60,9 +60,9 @@ namespace DeStoofApi.Chatsources.Discord
 
             var success = _messageService.LeaveTwitchChannel(settings.TwitchSettings.TwitchChannel);
             if (success)
-                await ReplyAsync("The bot has left twitch chat");
+                await ReplyAsync("The bot has left all channels");
             else
-                await ReplyAsync("Could not leave. Are you sure you connected to twitch chat?");
+                await ReplyAsync("There is no channel to leave from :poop:");
         }
 
         [Command("SetChannel")]
@@ -70,6 +70,9 @@ namespace DeStoofApi.Chatsources.Discord
         [RequireUserPermission(GuildPermission.ManageGuild)]
         public async Task SetChannelAsync([Summary("The twitch channel to connect to")]string channel)
         {
+            await ReplyAsync("Leaving possibly connected twitch channels...");
+            await DisconnectTwitchAsync();
+
             var filter = Builders<GuildSettings>.Filter.Eq(g => g.GuildId, Context.Guild.Id);
             var update = Builders<GuildSettings>.Update
                 .Set(g => g.TwitchSettings.DiscordChannel, Context.Channel.Id)
