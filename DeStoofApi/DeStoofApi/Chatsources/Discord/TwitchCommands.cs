@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
+using DeStoofApi.Models;
 using DeStoofApi.Models.Guilds;
 using DeStoofApi.Services;
 using Discord;
@@ -77,6 +79,34 @@ namespace DeStoofApi.Chatsources.Discord
             await _guildSettings.UpdateOneAsync(filter, update);
 
             await ReplyAsync("Settings have been saved!");
+        }
+
+        [Command("SendMessagesTo")]
+        [Summary("Specify what platforms you want the twitch chat messages sent to seperated by a space. Platforms: discord twitch")]
+        [RequireUserPermission(GuildPermission.ManageGuild)]
+        public async Task SendMessagesToAsync([Summary("Platforms seperated by a space. Platforms: Twitch, Discord.")]params string[] platform)
+        {
+            var platforms = Enums.ChatPlatforms.None;
+            foreach (var p in platform)
+            {
+                bool success = Enum.TryParse(p, true, out Enums.ChatPlatforms e);
+                if (success)
+                    platforms |= e;
+                else
+                    await ReplyAsync($"{p} is not a supported platform.");
+            }
+
+            if (platforms != 0)
+            {
+                var update = Builders<GuildSettings>.Update
+                    .Set(s => s.TwitchSettings.SendTo, platforms);
+                await _guildSettings.UpdateOneAsync(s => s.GuildId == Context.Guild.Id, update);
+                await ReplyAsync("Settings have been updated. Dont forget to set a channel/place for the messages to arrive for each platform.");
+            }
+            else
+            {
+                await ReplyAsync("Settings have not been updated as all given parameters could not be understood.");
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using DeStoofApi.Models;
 using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Guilds;
 using Discord;
@@ -46,6 +47,7 @@ namespace DeStoofApi.Chatsources.Discord
             if (command == null)
             {
                 embedBuilder.Title = "Commands for DeStoofBot";
+                embedBuilder.Description = $"{settings.CommandPrefix}help [command] for command specific help.";
                 foreach (var c in _service.Commands)
                 {
                     embedBuilder.AddField(a =>
@@ -75,7 +77,7 @@ namespace DeStoofApi.Chatsources.Discord
                     embedBuilder.AddField(f =>
                     {
                         f.Name = param.Name;
-                        f.Value = $"{(param.IsOptional? "(optional)" : "")} {param.Summary}";
+                        f.Value = $"{(param.IsOptional? "(optional)" : "")} {param.Summary ?? "Undocumented"}";
                     });
                 }
             }
@@ -118,11 +120,39 @@ namespace DeStoofApi.Chatsources.Discord
         {
             var settings = await GetGuildSettings();
 
-            var discordMessages = await _discordChatMessages.CountAsync(m => m.GuildId == Context.Guild.Id);
+            var discordMessages = await _discordChatMessages.CountAsync(m => m.GuildIds.Contains(Context.Guild.Id));
             var twitchMessages = await _twitchChatMessages.CountAsync(m => m.Channel == settings.TwitchSettings.TwitchChannel);
 
             await ReplyAsync(
                 $"{discordMessages} discord messages and {twitchMessages} twitch messages have been sent since this bot joined the channel.");
+        }
+
+        [Command("SendMessagesTo")]
+        [Summary("Specify what platforms you want the discord messages sent to seperated by a space. Platforms: discord twitch")]
+        [RequireUserPermission(GuildPermission.ManageGuild)]
+        public async Task SendMessagesToAsync([Summary("Platforms seperated by a space. Platforms: Twitch, Discord.")]params string[] platform)
+        {
+            var platforms = Enums.ChatPlatforms.None;
+            foreach (var p in platform)
+            {
+                bool success = Enum.TryParse(p, true, out Enums.ChatPlatforms e);
+                if (success)
+                    platforms |= e;
+                else
+                    await ReplyAsync($"{p} is not a supported platform.");
+            }
+
+            if (platforms != 0)
+            {
+                var update = Builders<GuildSettings>.Update
+                    .Set(s => s.DiscordSettings.SendTo, platforms);
+                await _guildSettings.UpdateOneAsync(s => s.GuildId == Context.Guild.Id, update);
+                await ReplyAsync("Settings have been updated. Dont forget to set a channel/place for the messages to arrive for each platform.");
+            }
+            else
+            {
+                await ReplyAsync("Settings have not been updated as all given parameters could not be understood.");
+            }
         }
 
         private async Task<GuildSettings> GetGuildSettings()

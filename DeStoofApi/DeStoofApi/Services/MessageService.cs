@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Threading.Tasks;
 using DeStoofApi.Chatsources.Discord;
 using DeStoofApi.Chatsources.Twitch;
 using DeStoofApi.EventArgs;
 using DeStoofApi.Hubs;
+using DeStoofApi.Models;
 using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Guilds;
 using Microsoft.Extensions.Configuration;
@@ -27,10 +27,10 @@ namespace DeStoofApi.Services
             _guildSettings = database1.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
 
             _twitchManager = twitchManager;
-            _twitchManager.MessageReceived += OnTwitchMessageReceived;
+            _twitchManager.MessageReceived += OnChatMessageReceived;
 
             _discordManager = discordManager;
-            _discordManager.MessageReceived += OnDiscordMessageReceived;
+            _discordManager.MessageReceived += OnChatMessageReceived;
 
             _chatHub = chatHub;
         }
@@ -56,28 +56,37 @@ namespace DeStoofApi.Services
             return await _discordManager.RunBotAsync();
         }
 
-        private async void OnTwitchMessageReceived(object sender, MessageReceivedEventArgs args)
+        private async Task OnChatMessageReceived(object sender, MessageReceivedEventArgs args)
         {
-            if (!(args.ChatMessage is TwitchChatMessage chatMessage)) return;
+            await SendToPlatforms(args.ChatMessage);
 
-            var filter = Builders<GuildSettings>.Filter.Eq(g => g.TwitchSettings.TwitchChannel, chatMessage.Channel);
-            var settings = await (await _guildSettings.FindAsync(filter)).FirstOrDefaultAsync();
+            await _chatHub.Clients.All.SendAsync("Send", args.ChatMessage);
 
-            await _chatHub.Clients.All.SendAsync("Send", chatMessage.ToJson());
-
-            if (settings.TwitchSettings.DiscordChannel != null)
-                _discordManager.SendDiscordMessage((ulong) settings.TwitchSettings.DiscordChannel, chatMessage);
-
-            _messages.InsertOne(chatMessage);
+            _messages.InsertOne(args.ChatMessage);
         }
 
-        private async void OnDiscordMessageReceived(object sender, MessageReceivedEventArgs args)
+        private async Task<GuildSettings> GetGuildSettings(ulong guildId)
         {
-            ChatMessage chatMessage = args.ChatMessage;
+            var filter = Builders<GuildSettings>.Filter.Eq(g => g.GuildId, guildId);
+            return await (await _guildSettings.FindAsync(filter)).FirstOrDefaultAsync();
+        }
 
-            await _chatHub.Clients.All.SendAsync("Send", chatMessage.ToJson());
+        private async Task SendToPlatforms(ChatMessage message)
+        {
+            foreach (var guildId in message.GuildIds)
+            {
+                var settings = await GetGuildSettings(guildId);
 
-            _messages.InsertOne(chatMessage);
+                if (message.Message.StartsWith(settings.CommandPrefix))
+                    return;
+
+                if (message.SendTo.HasFlag(Enums.ChatPlatforms.Discord))
+                    if (settings.TwitchSettings.DiscordChannel != null)
+                        _discordManager.SendDiscordMessage((ulong) settings.TwitchSettings.DiscordChannel, message);
+                if (message.SendTo.HasFlag(Enums.ChatPlatforms.Twitch))
+                    await _twitchManager.SendMessage(message, settings.TwitchSettings.TwitchChannel);
+            }
+
         }
     }
 }
