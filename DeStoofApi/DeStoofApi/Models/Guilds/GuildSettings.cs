@@ -10,5 +10,6 @@ namespace DeStoofApi.Models.Guilds
         public ulong GuildId { get; set; }
         public string CommandPrefix { get; set; } = "!";
         public GuildTwitchSettings TwitchSettings { get; set; } = new GuildTwitchSettings();
+        public DiscordSettings DiscordSettings { get; set; } = new DiscordSettings();
     }
 }

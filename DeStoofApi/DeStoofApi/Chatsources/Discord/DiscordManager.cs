@@ -16,7 +16,7 @@ namespace DeStoofApi.Chatsources.Discord
 {
     public class DiscordManager
     {
-        public delegate void MessageReceivedHandler(object sender, MessageReceivedEventArgs args);
+        public delegate Task MessageReceivedHandler(object sender, MessageReceivedEventArgs args);
         public event MessageReceivedHandler MessageReceived;
 
         private readonly DiscordSocketClient _client;
@@ -92,21 +92,22 @@ namespace DeStoofApi.Chatsources.Discord
             if (MessageReceived == null)
                 return;
 
-            MessageReceived(this, new MessageReceivedEventArgs(new DiscordChatMessage
-            {
-                User = ((IGuildUser) message.Author).Nickname ?? message.Author.Username,
-                UserId = message.Author.Id,
-                GuildId = channel.Guild.Id,
-                Message = message.Content,
-                Date = DateTime.Now
-            }));
-
             var settings = await (await _guildSettings.FindAsync(g => g.GuildId == channel.Guild.Id)).FirstOrDefaultAsync();
             if (settings == null)
             {
-                settings = new GuildSettings { GuildId = channel.Guild.Id};
+                settings = new GuildSettings { GuildId = channel.Guild.Id };
                 await _guildSettings.InsertOneAsync(settings);
             }
+
+            var chatMessage = new DiscordChatMessage
+            {
+                User = ((IGuildUser) message.Author).Nickname ?? message.Author.Username,
+                UserId = message.Author.Id,
+                Message = message.Content,
+                Date = DateTime.Now,
+                SendTo = settings.DiscordSettings.SendTo
+            };
+            chatMessage.GuildIds.Add(channel.Guild.Id);                      
 
             int argPos = 0;
 
@@ -120,6 +121,8 @@ namespace DeStoofApi.Chatsources.Discord
                     Debug.WriteLine(result.ErrorReason);
                 }
             }
+
+            await MessageReceived(this, new MessageReceivedEventArgs(chatMessage));
         }
 
         public async void SendDiscordMessage(ulong channelNumber, ChatMessage message)
