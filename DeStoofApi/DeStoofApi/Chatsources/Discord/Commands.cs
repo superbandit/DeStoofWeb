@@ -35,28 +35,37 @@ namespace DeStoofApi.Chatsources.Discord
         {
             var settings = await GetGuildSettings();
 
-            var embedBuilder = new EmbedBuilder
-            {               
-                Color = new Color(10, 200, 10),
-                Footer = new EmbedFooterBuilder
-                {
-                    Text = $"Made by Superbandit | [{DateTime.Now.ToShortTimeString()}]"
-                }
-            };
-
             if (command == null)
             {
-                embedBuilder.Title = "Commands for DeStoofBot";
-                embedBuilder.Description = $"{settings.CommandPrefix}help [command] for command specific help.";
+                //For normal users
+                var embedBuilder = new EmbedBuilder
+                {
+                    Color = new Color(200, 10, 200),
+                    Title = "Commands for DeStoofBot",
+                    Description = $"{settings.CommandPrefix}help [command] for command specific help.",
+                    Footer = new EmbedFooterBuilder
+                    {
+                        Text = $"Made by Superbandit | [{DateTime.Now.ToShortTimeString()}]"
+                    }
+                };
+
+                if (!(Context.User is IGuildUser user)) return;
+
                 foreach (var c in _service.Commands)
                 {
-                    embedBuilder.AddField(a =>
+                    var condition = (RequireUserPermissionAttribute)c.Preconditions.FirstOrDefault(p => p is RequireUserPermissionAttribute);
+                    if (condition == null || condition.GuildPermission !=null && user.GuildPermissions.Has((GuildPermission) condition.GuildPermission))
                     {
-                        a.Name = $"{settings.CommandPrefix}{c.Aliases.FirstOrDefault()}";
-                        a.Value = c.Summary ?? "Undocumented";
-                    });
-
+                        embedBuilder.AddField(a =>
+                        {
+                            a.Name = $"{settings.CommandPrefix}{c.Aliases.FirstOrDefault()}";
+                            a.Value = c.Summary ?? "Undocumented";
+                        });
+                    }
                 }
+
+                var embed = embedBuilder.Build();
+                await ReplyAsync("", false, embed);
             }
             else
             {
@@ -68,9 +77,23 @@ namespace DeStoofApi.Chatsources.Discord
                     return;
                 }
 
-                embedBuilder.Title = $"Help for {command}";
-                embedBuilder.Description = $"{commandFound.Summary} \n" +
-                                           $"{(commandFound.Parameters.Count > 0 ? "Parameters:" : "No parameters")}";
+                if (commandFound.Attributes.Any(a => a is RequireUserPermissionAttribute) && Context.User is IGuildUser user && !user.GuildPermissions.ManageChannels)
+                {
+                    await ReplyAsync("Command could not be found.");
+                    return;
+                }
+
+                var embedBuilder = new EmbedBuilder
+                {
+                    Color = new Color(10, 200, 10),
+                    Title = $"Help for {command}",
+                    Description = $"{commandFound.Summary} \n" +
+                                  $"{(commandFound.Parameters.Count > 0 ? "Parameters:" : "No parameters")}",
+                    Footer = new EmbedFooterBuilder
+                    {
+                        Text = $"Made by Superbandit | [{DateTime.Now.ToShortTimeString()}]"
+                    }
+                };
 
                 foreach (var param in commandFound.Parameters)
                 {
@@ -80,10 +103,10 @@ namespace DeStoofApi.Chatsources.Discord
                         f.Value = $"{(param.IsOptional? "(optional)" : "")} {param.Summary ?? "Undocumented"}";
                     });
                 }
-            }
 
-            var eb = embedBuilder.Build();
-            await ReplyAsync("", false, eb);
+                var embed = embedBuilder.Build();
+                await ReplyAsync("", false, embed);
+            }            
         }
 
         [Command("LeaveServer")]
@@ -97,6 +120,7 @@ namespace DeStoofApi.Chatsources.Discord
 
         [Command("DeStoofBot SetPrefix")]
         [Summary("Sets the prefix for all commands for DeStoofBot.")]
+        [RequireUserPermission(GuildPermission.ManageGuild)]
         public async Task SetPrefixAsync([Summary("The prefix to be set.")]string prefix)
         {
             var update = Builders<GuildSettings>.Update.Set(g => g.CommandPrefix, prefix);

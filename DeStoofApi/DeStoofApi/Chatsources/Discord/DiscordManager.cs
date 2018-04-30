@@ -105,7 +105,8 @@ namespace DeStoofApi.Chatsources.Discord
                 UserId = message.Author.Id,
                 Message = message.Content,
                 Date = DateTime.Now,
-                SendTo = settings.DiscordSettings.SendTo
+                SendTo = settings.DiscordSettings.SendTo,
+                ChannelId = channel.Id
             };
             chatMessage.GuildIds.Add(channel.Guild.Id);                      
 

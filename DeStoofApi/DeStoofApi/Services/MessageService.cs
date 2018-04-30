@@ -77,6 +77,8 @@ namespace DeStoofApi.Services
             {
                 var settings = await GetGuildSettings(guildId);
 
+                if (message is DiscordChatMessage a && a.ChannelId != settings.TwitchSettings.DiscordChannel) return;
+
                 if (message.Message.StartsWith(settings.CommandPrefix))
                     return;
 
