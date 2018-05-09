@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <UserSecretsId>30d43465-4c94-4ed3-a1e6-eebc99615dee</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,9 +13,9 @@
     <PackageReference Include="Discord.Net" Version="2.0.0-beta" />
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.6" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.0.0-preview1-final" />
-    <PackageReference Include="MongoDB.Driver" Version="2.5.0" />
+    <PackageReference Include="MongoDB.Driver" Version="2.7.0-beta0001" />
     <PackageReference Include="QB.AspNetCore.Identity.MongoDB" Version="2.0.0" />
-    <PackageReference Include="TwitchLib" Version="2.1.0" />
+    <PackageReference Include="TwitchLib" Version="2.1.2" />
   </ItemGroup>
 
   <ItemGroup>

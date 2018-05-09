@@ -35,26 +35,12 @@ namespace DeStoofApi.Services
             _chatHub = chatHub;
         }
 
-        public void StartTwitchConnection()
+        public async Task Startup()
         {
             _twitchManager.Start();
+            await _discordManager.RunBotAsync();
         }
 
-        public bool JoinTwitchChannel(string channel)
-        {
-            return _twitchManager.JoinTwitchChannel(channel);
-        }
-
-        public bool LeaveTwitchChannel(string channel)
-        {
-            return _twitchManager.LeaveTwitchChannel(channel);
-        }
-
-
-        public async Task<bool> StartDiscordConnection()
-        {
-            return await _discordManager.RunBotAsync();
-        }
 
         private async Task OnChatMessageReceived(object sender, MessageReceivedEventArgs args)
         {
@@ -84,9 +70,9 @@ namespace DeStoofApi.Services
 
                 if (message.SendTo.HasFlag(Enums.ChatPlatforms.Discord))
                     if (settings.TwitchSettings.DiscordChannel != null)
-                        _discordManager.SendDiscordMessage((ulong) settings.TwitchSettings.DiscordChannel, message);
+                        _discordManager.SendChatMessage((ulong) settings.TwitchSettings.DiscordChannel, message);
                 if (message.SendTo.HasFlag(Enums.ChatPlatforms.Twitch))
-                    await _twitchManager.SendMessage(message, settings.TwitchSettings.TwitchChannel);
+                    await _twitchManager.SendMessage(message, settings.TwitchSettings.TwitchChannelName);
             }
 
         }

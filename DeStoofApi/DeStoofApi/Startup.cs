@@ -86,8 +86,7 @@ namespace DeStoofApi
 
             app.UseMvc();
 
-            app.ApplicationServices.GetService<MessageService>().StartDiscordConnection().GetAwaiter().GetResult();
-            app.ApplicationServices.GetService<MessageService>().StartTwitchConnection();
+            app.ApplicationServices.GetService<MessageService>().Startup().GetAwaiter().GetResult();
         }
     }
 }

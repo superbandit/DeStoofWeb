@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DeStoofApi.EventArgs;
 using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Guilds;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
+using TwitchLib.Api;
+using TwitchLib.Api.Enums;
+using TwitchLib.Api.Models.Helix.Users.GetUsers;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
@@ -18,21 +22,24 @@ namespace DeStoofApi.Chatsources.Twitch
         public delegate Task MessageReceivedHandler(object sender, MessageReceivedEventArgs args);
         public event MessageReceivedHandler MessageReceived;
 
-        private TwitchClient _client;
-        private readonly ConnectionCredentials _credentials;
+        private readonly TwitchAPI _twitchApi = new TwitchAPI();
+        private readonly TwitchClient _client = new TwitchClient();
+
+        private readonly IConfiguration _config;
         private readonly IMongoCollection<GuildSettings> _guildSettings;
-        private readonly List<string> _connectedChannels = new List<string>();
 
         public TwitchManager(IConfiguration config, IMongoDatabase database)
         {
+            _config = config;
+
             _guildSettings = database.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
-            _credentials = new ConnectionCredentials("destoofbot", config["Secure:TwitchToken"]);
         }
 
         public void Start()
         {
-            _client = new TwitchClient();
-            _client.Initialize(_credentials);
+            _client.Initialize(new ConnectionCredentials("StreamerCompanion", _config["Secure:TwitchToken"]));
+            _twitchApi.Settings.ClientId = "yjg7ikvnh54s37xgxao69ufub0nv4b";
+            _twitchApi.Settings.AccessToken = _config["Secure:TwitchApiToken"];
 
             _client.OnMessageReceived += OnMessageReceived;
 
@@ -41,22 +48,29 @@ namespace DeStoofApi.Chatsources.Twitch
 
         public bool JoinTwitchChannel(string channel)
         {
-            if (_connectedChannels.Contains(channel)) return false;
+            if (_client.JoinedChannels.Any(c => c.Channel == channel)) return false;
 
-            _connectedChannels.Add(channel);
             _client.JoinChannel(channel);
             return true;
-
         }
 
         public bool LeaveTwitchChannel(string channel)
         {
-            if (!_connectedChannels.Contains(channel)) return false;
+            if (_client.JoinedChannels.All(c => c.Channel != channel)) return false;
 
-            _connectedChannels.Remove(channel);
             _client.LeaveChannel(channel);
             return true;
+        }
 
+        public async Task<GetUsersResponse> GetChannelusers(List<string> channelNames)
+        {
+            return await _twitchApi.Users.helix.GetUsersAsync(logins: channelNames);
+        }
+
+        public Task<bool> SubToChannelLiveWebhook(int userId)
+        {
+            return _twitchApi.Webhooks.helix.StreamUpDownAsync(
+                "http://destoofapi.azurewebsites.net/api/chat/channelLive", WebhookCallMode.Subscribe, userId.ToString(), new TimeSpan(0,0,0, 864000));
         }
 
         private async void OnMessageReceived(object sender, OnMessageReceivedArgs e)
@@ -65,10 +79,8 @@ namespace DeStoofApi.Chatsources.Twitch
 
             if (message.IsMe) return;
 
-            //Handle twitch commands
-            var settings = await (await _guildSettings.FindAsync(g => g.TwitchSettings.TwitchChannel == message.Channel)).FirstOrDefaultAsync();
+            var settings = await (await _guildSettings.FindAsync(g => g.TwitchSettings.TwitchChannelName == message.Channel)).FirstOrDefaultAsync();
             
-
             TwitchChatMessage chatMessage = new TwitchChatMessage
             {
                 Channel = message.Channel,
@@ -84,10 +96,9 @@ namespace DeStoofApi.Chatsources.Twitch
 
         public Task SendMessage(Models.ChatMessages.ChatMessage message, string channel)
         {
-            if (_connectedChannels.Contains(channel))
-            {
-                _client.SendMessage(channel, $"{message.User}: {message.Message}");               
-            }
+            if (_client.JoinedChannels.Any(c => c.Channel == channel))
+                _client.SendMessage(channel, $"{message.User}: {message.Message}");
+
             return Task.CompletedTask;
         }
     }

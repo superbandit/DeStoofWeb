@@ -7,6 +7,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using System.Collections.Generic;
+using System.Linq;
 using DeStoofApi.EventArgs;
 using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Guilds;
@@ -25,7 +26,7 @@ namespace DeStoofApi.Chatsources.Discord
         private readonly IServiceProvider _serviceProvider;
         private readonly IMongoCollection<GuildSettings> _guildSettings;
 
-        private List<SocketGuild> Guilds = new List<SocketGuild>();
+        private readonly List<SocketGuild> _guilds = new List<SocketGuild>();
 
         public DiscordManager(IConfiguration config, DiscordSocketClient client, CommandService commandService, IServiceProvider serviceProvider, IMongoDatabase mongoDatabase)
         {
@@ -52,23 +53,30 @@ namespace DeStoofApi.Chatsources.Discord
             _client.Ready += ClientReady;
             _client.JoinedGuild += GuildJoined;
 
+            //TODO update all live settings
+
             return true;
         }
 
         private async Task GuildJoined(SocketGuild arg)
         {
-            Guilds.Add(arg);
+            _guilds.Add(arg);
 
             await _guildSettings.ReplaceOneAsync(g => g.GuildId == arg.Id,
                 new GuildSettings { GuildId = arg.Id }, new UpdateOptions { IsUpsert = true });
         }
 
-        private Task ClientReady()
+        public async Task PartGuild(ulong guildId)
+        {
+            await _client.GetGuild(guildId).LeaveAsync();
+        }
+
+        private async Task ClientReady()
         {
             foreach (SocketGuild guild in _client.Guilds)
-                Guilds.Add(guild);
+                _guilds.Add(guild);
 
-            return Task.FromResult(0);
+            await _client.SetGameAsync("!help to get started.");
         }
 
         private Task Log(LogMessage arg)
@@ -87,7 +95,11 @@ namespace DeStoofApi.Chatsources.Discord
         private async Task HandleMessageAsync(SocketMessage arg)
         {
             if (!(arg is SocketUserMessage message) || message.Author.IsBot) return;
-            if (!(message.Channel is SocketGuildChannel channel)) return;
+            if (!(message.Channel is SocketGuildChannel channel))
+            {
+                await message.Channel.SendMessageAsync("Want this bot in your server? Click this link : https://discordapp.com/oauth2/authorize?client_id=416698597921521675&permissions=67112000&scope=bot");
+                return;
+            }
 
             if (MessageReceived == null)
                 return;
@@ -126,7 +138,24 @@ namespace DeStoofApi.Chatsources.Discord
             await MessageReceived(this, new MessageReceivedEventArgs(chatMessage));
         }
 
-        public async void SendDiscordMessage(ulong channelNumber, ChatMessage message)
+        public List<string> GetActiveServers()
+        {
+            return _client.Guilds.Select(guild => guild.Name).ToList();
+        }
+
+        public async Task GlobalMessageToServerOwners(string message)
+        {
+            message += $"\n" +
+                       $"\n" +
+                       $"Questions? Want a feature? Found a bug? shoot the maker of this bot a message:{_client.GetUser(288764290519924736).Mention} :rocket:\n" +
+                       $"You are receiving this message because you are the owner of one or more servers this bot is in.";
+            foreach (var guild in _client.Guilds)
+            {
+                await guild.Owner.SendMessageAsync(message);
+            }
+        }
+
+        public async void SendChatMessage(ulong channelNumber, ChatMessage message)
         {
             SocketTextChannel channel = _client.GetChannel(channelNumber) as SocketTextChannel;
 
@@ -134,9 +163,11 @@ namespace DeStoofApi.Chatsources.Discord
             if (channel != null) await channel.SendMessageAsync(toSend);
         }
 
-        public async Task PartGuild(ulong guildId)
+        public async void SendMessage(ulong channelNumber, string message, Embed embed = null)
         {
-            await _client.GetGuild(guildId).LeaveAsync();
+            SocketTextChannel channel = _client.GetChannel(channelNumber) as SocketTextChannel;
+
+            if (channel != null) await channel.SendMessageAsync(message, false, embed);
         }
     }
 }

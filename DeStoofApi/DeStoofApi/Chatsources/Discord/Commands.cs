@@ -41,7 +41,7 @@ namespace DeStoofApi.Chatsources.Discord
                 var embedBuilder = new EmbedBuilder
                 {
                     Color = new Color(200, 10, 200),
-                    Title = "Commands for DeStoofBot",
+                    Title = "Commands for StreamerCompanion",
                     Description = $"{settings.CommandPrefix}help [command] for command specific help.",
                     Footer = new EmbedFooterBuilder
                     {
@@ -91,7 +91,7 @@ namespace DeStoofApi.Chatsources.Discord
                                   $"{(commandFound.Parameters.Count > 0 ? "Parameters:" : "No parameters")}",
                     Footer = new EmbedFooterBuilder
                     {
-                        Text = $"Made by Superbandit | [{DateTime.Now.ToShortTimeString()}]"
+                        Text = "Made by Superbandit"
                     }
                 };
 
@@ -104,6 +104,7 @@ namespace DeStoofApi.Chatsources.Discord
                     });
                 }
 
+                embedBuilder.WithCurrentTimestamp();
                 var embed = embedBuilder.Build();
                 await ReplyAsync("", false, embed);
             }            
@@ -118,8 +119,8 @@ namespace DeStoofApi.Chatsources.Discord
             await _discordManager.PartGuild(Context.Guild.Id);
         }
 
-        [Command("DeStoofBot SetPrefix")]
-        [Summary("Sets the prefix for all commands for DeStoofBot.")]
+        [Command("StreamerCompanion SetPrefix")]
+        [Summary("Sets the prefix for all commands for StreamerCompanion.")]
         [RequireUserPermission(GuildPermission.ManageGuild)]
         public async Task SetPrefixAsync([Summary("The prefix to be set.")]string prefix)
         {
@@ -138,17 +139,70 @@ namespace DeStoofApi.Chatsources.Discord
             await ReplyAsync("Settings have been reset!");
         }
 
-        [Command("Messages")]
+        [Command("Stats")]
         [Summary("Shows how many messages have been sent since the bot joined the server.")]
-        public async Task GetMessagesAsync()
+        public async Task StatsAsync([Summary("User to get the stats from.")]IUser user = null)
         {
             var settings = await GetGuildSettings();
 
-            var discordMessages = await _discordChatMessages.CountAsync(m => m.GuildIds.Contains(Context.Guild.Id));
-            var twitchMessages = await _twitchChatMessages.CountAsync(m => m.Channel == settings.TwitchSettings.TwitchChannel);
+            var embedBuilder = new EmbedBuilder
+            {
+                Color = new Color(200, 10, 200),
+                Title = $"Stats for {user?.Username ?? Context.Guild.Name}",
+                ThumbnailUrl = user?.GetAvatarUrl() ?? Context.Guild.IconUrl,
+                Footer = new EmbedFooterBuilder
+                {
+                    Text = "Made by Superbandit"
+                }
+            };
 
-            await ReplyAsync(
-                $"{discordMessages} discord messages and {twitchMessages} twitch messages have been sent since this bot joined the channel.");
+            if (user == null)
+            {
+                embedBuilder.Description = "Specify a user to see user specific stats.";
+                var discordMessages = await (await _discordChatMessages.FindAsync(m => m.GuildIds.Contains(Context.Guild.Id))).ToListAsync();
+                var twitchMessages = await _twitchChatMessages.CountAsync(m => m.Channel == settings.TwitchSettings.TwitchChannelName);
+
+                DateTime oldestMessageDate = discordMessages.Min(d => d.Date);
+                DiscordChatMessage oldestMessage = discordMessages.FirstOrDefault(m => m.Date == oldestMessageDate);
+                embedBuilder.AddField(f =>
+                {
+                    f.Name = "First recorded message:";
+                    f.Value = $"**Date:** {oldestMessageDate} \n" +
+                              $"**User:** {oldestMessage?.User} \n" +
+                              $"**Content:** {(oldestMessage?.Message.Length >= 30 ? oldestMessage.Message.Substring(0, 30) + "..." : oldestMessage?.Message)} \n ";
+                });
+
+                embedBuilder.AddField(f =>
+                {
+                    f.Name = "Message amount:";
+                    f.Value = $"**Discord:** {discordMessages.Count} \n" +
+                              $"**Twitch:** {twitchMessages}";
+                });
+            }
+            else
+            {
+                var discordMessages = await (await _discordChatMessages.FindAsync(m => m.GuildIds.Contains(Context.Guild.Id) && m.UserId == user.Id)).ToListAsync();
+
+                DateTime oldestMessageDate = discordMessages.Min(d => d.Date);
+                DiscordChatMessage oldestMessage = discordMessages.FirstOrDefault(m => m.Date == oldestMessageDate);
+                embedBuilder.AddField(f =>
+                {
+                    f.Name = "First recorded message:";
+                    f.Value = $"**Date:** {oldestMessageDate} \n" +
+                              $"**Username at the time:** {oldestMessage?.User} \n" +
+                              $"**Content:** {(oldestMessage?.Message.Length >= 30 ? oldestMessage.Message.Substring(0, 30) + "..." : oldestMessage?.Message)} \n ";
+                });
+
+                embedBuilder.AddField(f =>
+                {
+                    f.Name = "Discord messages:";
+                    f.Value = discordMessages.Count;
+                });
+            }
+
+            embedBuilder.WithCurrentTimestamp();
+            var embed = embedBuilder.Build();
+            await ReplyAsync("", false, embed);
         }
 
         [Command("SendMessagesTo")]
