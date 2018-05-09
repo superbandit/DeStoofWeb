@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using DeStoofApi.Chatsources.Twitch;
 using DeStoofApi.Models;
 using DeStoofApi.Models.Guilds;
-using DeStoofApi.Services;
 using Discord;
 using Discord.Commands;
 using Microsoft.Extensions.Configuration;
@@ -13,12 +14,12 @@ namespace DeStoofApi.Chatsources.Discord
     [Group("Twitch")]
     public class TwitchCommands : ModuleBase<SocketCommandContext>
     {
-        private readonly MessageService _messageService;
+        private readonly TwitchManager _twitchManager;
         private readonly IMongoCollection<GuildSettings> _guildSettings;
 
-        public TwitchCommands(MessageService messageService, IMongoDatabase mongoDatabase, IConfiguration config)
+        public TwitchCommands(IMongoDatabase mongoDatabase, IConfiguration config, TwitchManager twitchManager)
         {
-            _messageService = messageService;
+            _twitchManager = twitchManager;
             _guildSettings = mongoDatabase.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
         }
 
@@ -29,17 +30,20 @@ namespace DeStoofApi.Chatsources.Discord
         {
             var settings = await (await _guildSettings.FindAsync(s => s.GuildId == Context.Guild.Id)).FirstOrDefaultAsync();
 
-            if (settings.TwitchSettings.TwitchChannel == null || settings.TwitchSettings.DiscordChannel == null)
+            if (settings.TwitchSettings.TwitchChannelName == null || settings.TwitchSettings.DiscordChannel == null)
             {
                 await ReplyAsync(
                     $"Settings cannot be found, consider setting them with {settings.CommandPrefix}twitch SetChannel [ChannelName]");
                 return;
             }
 
-            await ReplyAsync($"Found settings, connecting {settings.TwitchSettings.TwitchChannel} to {settings.TwitchSettings.DiscordChannelname}.");
-            var success = _messageService.JoinTwitchChannel(settings.TwitchSettings.TwitchChannel);
+            await ReplyAsync($"Found settings, connecting {settings.TwitchSettings.TwitchChannelName} to {settings.TwitchSettings.DiscordChannelname}.");
+            var success = _twitchManager.JoinTwitchChannel(settings.TwitchSettings.TwitchChannelName);
             if (success)
+            {
+                await _twitchManager.SubToChannelLiveWebhook(settings.TwitchSettings.UserId);
                 await ReplyAsync("Successfully connected.");
+            }
             else
                 await ReplyAsync("Could not connect, maybe you are already connected.");
         }
@@ -51,14 +55,14 @@ namespace DeStoofApi.Chatsources.Discord
         {
             var settings = await (await _guildSettings.FindAsync(s => s.GuildId == Context.Guild.Id)).FirstOrDefaultAsync();
 
-            if (settings.TwitchSettings.TwitchChannel == null || settings.TwitchSettings.DiscordChannel == null)
+            if (settings.TwitchSettings.TwitchChannelName == null || settings.TwitchSettings.DiscordChannel == null)
             {
                 await ReplyAsync(
                     $"Settings cannot be found, consider setting them with {settings.CommandPrefix}twitch SetChannel [ChannelName]");
                 return;
             }
 
-            var success = _messageService.LeaveTwitchChannel(settings.TwitchSettings.TwitchChannel);
+            var success = _twitchManager.LeaveTwitchChannel(settings.TwitchSettings.TwitchChannelName);
             if (success)
                 await ReplyAsync("The bot has left all channels");
             else
@@ -66,17 +70,20 @@ namespace DeStoofApi.Chatsources.Discord
         }
 
         [Command("SetChannel")]
-        [Summary("Saves what channel you want your twitch chat sent to")]
+        [Summary("Saves what channel you want your twitch chat sent to. Please be aware that you need permission from the channel owner before connecting.")]
         [RequireUserPermission(GuildPermission.ManageGuild)]
         public async Task SetChannelAsync([Summary("The twitch channel to connect to")]string channel)
         {
             await ReplyAsync("Leaving possibly connected twitch channels...");
             await DisconnectTwitchAsync();
 
+            var twitchuser = await _twitchManager.GetChannelusers(new List<string>{channel});
+
             var filter = Builders<GuildSettings>.Filter.Eq(g => g.GuildId, Context.Guild.Id);
             var update = Builders<GuildSettings>.Update
                 .Set(g => g.TwitchSettings.DiscordChannel, Context.Channel.Id)
-                .Set(g => g.TwitchSettings.TwitchChannel, channel)
+                .Set(g => g.TwitchSettings.TwitchChannelName, channel)
+                .Set(g => g.TwitchSettings.UserId, Int32.Parse(twitchuser.Users[0].Id))
                 .Set(g => g.TwitchSettings.DiscordChannelname, Context.Channel.Name);
 
             await _guildSettings.UpdateOneAsync(filter, update);

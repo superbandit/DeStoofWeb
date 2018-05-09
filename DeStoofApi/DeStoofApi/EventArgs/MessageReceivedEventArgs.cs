@@ -10,6 +10,5 @@ namespace DeStoofApi.EventArgs
         {
             ChatMessage = message;
         }
-
     }
 }

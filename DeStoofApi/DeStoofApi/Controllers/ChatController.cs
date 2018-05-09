@@ -1,7 +1,13 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using DeStoofApi.Chatsources.Discord;
+using DeStoofApi.Models.Guilds;
+using DeStoofApi.Models.Incoming;
 using Microsoft.AspNetCore.Mvc;
-using DeStoofApi.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
+using MongoDB.Driver;
 
 namespace DeStoofApi.Controllers
 {
@@ -9,32 +15,29 @@ namespace DeStoofApi.Controllers
     [Route("api/chat")]
     public class ChatController : Controller
     {
-        private readonly MessageService _messageService;
+        private readonly DiscordManager _discordManager;
+        private readonly IMongoCollection<GuildSettings> _guildSettings;
 
-        public ChatController(MessageService messageService)
+        public ChatController(DiscordManager discordManager, IConfiguration config, IMongoDatabase database)
         {
-            _messageService = messageService;
+            _discordManager = discordManager;
+            _guildSettings = database.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
         }
 
-        [HttpPost, Route("connectTwitch/{channel}")]
-        public IActionResult ConnectToTwitch([FromRoute]string channel)
+        [AllowAnonymous]
+        [HttpPost, Route("channelLive")]
+        public async Task<IActionResult> ChannelLive([FromBody] StreamUpWebhook stream)
         {
-            bool x = _messageService.JoinTwitchChannel(channel);
-            if (!x)
-                return BadRequest("Channel already added");
+            var settings = await (await _guildSettings.FindAsync(s => s.TwitchSettings.UserId == Int32.Parse(stream.Data.FirstOrDefault().UserId))).FirstOrDefaultAsync();
+
+            if (stream == null) return Ok();
+
+            if (settings.TwitchSettings.DiscordChannel != null)
+                _discordManager.SendMessage((ulong) settings.TwitchSettings.DiscordChannel,
+                    $"@everyone {settings.TwitchSettings.TwitchChannelName} has just gone live!");
 
             return Ok();
         }
-
-        [HttpPost, Route("startDiscord")]
-        public async Task<IActionResult> ConnectToDiscord([FromRoute]string channel)
-        {
-            bool x = await _messageService.StartDiscordConnection();
-            if (!x)
-                return BadRequest("Bot already active");
-
-            return Ok();
-        }     
 
         [AllowAnonymous]
         [HttpGet, Route("ping")]
