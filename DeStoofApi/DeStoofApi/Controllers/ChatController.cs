@@ -5,13 +5,11 @@ using DeStoofApi.Chatsources.Discord;
 using DeStoofApi.Models.Guilds;
 using DeStoofApi.Models.Incoming;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 
 namespace DeStoofApi.Controllers
 {
-    [Authorize]
     [Route("api/chat")]
     public class ChatController : Controller
     {
@@ -24,7 +22,6 @@ namespace DeStoofApi.Controllers
             _guildSettings = database.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
         }
 
-        [AllowAnonymous]
         [HttpPost, Route("channelLive")]
         public async Task<IActionResult> ChannelLive([FromBody] StreamUpWebhook stream)
         {
@@ -32,14 +29,13 @@ namespace DeStoofApi.Controllers
 
             if (stream == null) return Ok();
 
-            if (settings.TwitchSettings.DiscordChannel != null)
-                _discordManager.SendMessage((ulong) settings.TwitchSettings.DiscordChannel,
-                    $"@everyone {settings.TwitchSettings.TwitchChannelName} has just gone live!");
+            if (settings.TwitchSettings.WebhookDiscordChannel != null)
+                _discordManager.SendMessage((ulong) settings.TwitchSettings.WebhookDiscordChannel,
+                    settings.TwitchSettings.WebhookMessage);
 
             return Ok();
         }
 
-        [AllowAnonymous]
         [HttpGet, Route("ping")]
         public IActionResult Ping()
         {

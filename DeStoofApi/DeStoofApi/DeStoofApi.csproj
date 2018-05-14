@@ -3,6 +3,10 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <UserSecretsId>30d43465-4c94-4ed3-a1e6-eebc99615dee</UserSecretsId>
+    <ApplicationIcon />
+    <OutputType>Exe</OutputType>
+    <StartupObject />
+    <Win32Resource />
   </PropertyGroup>
 
   <ItemGroup>

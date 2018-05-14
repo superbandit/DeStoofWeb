@@ -9,6 +9,7 @@ using DeStoofApi.Controllers;
 using DeStoofApi.Services;
 using DeStoofApi.Chatsources.Twitch;
 using DeStoofApi.Hubs;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using MongoDB.Driver;
@@ -54,10 +55,14 @@ namespace DeStoofApi
 
             services.AddSignalR();
 
-            services.AddSingleton<DiscordSocketClient>();
+            services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
+            {
+                LogLevel = LogSeverity.Info
+            }));
             services.AddSingleton<CommandService>();
             services.AddSingleton<TwitchManager>();
             services.AddSingleton<DiscordManager>();
+            services.AddSingleton<CommandHandler>();
             services.AddSingleton<MessageService>();
             services.AddSingleton<IServiceProvider>(services.BuildServiceProvider());
 
@@ -72,7 +77,7 @@ namespace DeStoofApi
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-            }           
+            }
             app.UseStaticFiles();
 
             app.UseAuthentication();
