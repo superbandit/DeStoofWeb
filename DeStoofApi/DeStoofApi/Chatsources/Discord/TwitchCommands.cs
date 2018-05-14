@@ -26,24 +26,30 @@ namespace DeStoofApi.Chatsources.Discord
         [Command("ConnectChat")]
         [Summary("Connects to the twitch chat and starts sending messages.")]
         [RequireUserPermission(GuildPermission.ManageGuild)]
-        public async Task ConnectToTwitchAsync()
+        public async Task ConnectToTwitchAsync([Summary("The twitch channel to connect to")]string channel = null)
         {
             var settings = await (await _guildSettings.FindAsync(s => s.GuildId == Context.Guild.Id)).FirstOrDefaultAsync();
 
-            if (settings.TwitchSettings.TwitchChannelName == null || settings.TwitchSettings.DiscordChannel == null)
+            if (settings.TwitchSettings?.TwitchChannelName != null)
+                _twitchManager.LeaveTwitchChannel(settings.TwitchSettings.TwitchChannelName);
+            else if (settings.TwitchSettings?.TwitchChannelName == null && channel == null)
             {
-                await ReplyAsync(
-                    $"Settings cannot be found, consider setting them with {settings.CommandPrefix}twitch SetChannel [ChannelName]");
+                await ReplyAsync("You have to specify a twitch channel the first time you call this command.");
                 return;
             }
 
-            await ReplyAsync($"Found settings, connecting {settings.TwitchSettings.TwitchChannelName} to {settings.TwitchSettings.DiscordChannelname}.");
-            var success = _twitchManager.JoinTwitchChannel(settings.TwitchSettings.TwitchChannelName);
-            if (success)
-            {
-                await _twitchManager.SubToChannelLiveWebhook(settings.TwitchSettings.UserId);
+            var twitchuser = await _twitchManager.GetChannelusers(new List<string> { channel ?? settings.TwitchSettings.TwitchChannelName });
+
+            var update = Builders<GuildSettings>.Update
+                .Set(g => g.TwitchSettings.DiscordChannel, Context.Channel.Id)
+                .Set(g => g.TwitchSettings.TwitchChannelName, channel ?? settings.TwitchSettings.TwitchChannelName)
+                .Set(g => g.TwitchSettings.UserId, Int32.Parse(twitchuser.Users[0].Id))
+                .Set(g => g.TwitchSettings.DiscordChannelname, Context.Channel.Name);
+            await _guildSettings.UpdateOneAsync(g => g.GuildId == Context.Guild.Id, update);
+
+            var success = _twitchManager.JoinTwitchChannel(channel ?? settings.TwitchSettings.TwitchChannelName);
+            if (success)               
                 await ReplyAsync("Successfully connected.");
-            }
             else
                 await ReplyAsync("Could not connect, maybe you are already connected.");
         }
@@ -58,37 +64,40 @@ namespace DeStoofApi.Chatsources.Discord
             if (settings.TwitchSettings.TwitchChannelName == null || settings.TwitchSettings.DiscordChannel == null)
             {
                 await ReplyAsync(
-                    $"Settings cannot be found, consider setting them with {settings.CommandPrefix}twitch SetChannel [ChannelName]");
+                    $"Maybe you should try connecting first :thinking:");
                 return;
             }
 
             var success = _twitchManager.LeaveTwitchChannel(settings.TwitchSettings.TwitchChannelName);
             if (success)
-                await ReplyAsync("The bot has left all channels");
+                await ReplyAsync("The bot has left the twitch channel");
             else
                 await ReplyAsync("There is no channel to leave from :poop:");
         }
 
-        [Command("SetChannel")]
-        [Summary("Saves what channel you want your twitch chat sent to. Please be aware that you need permission from the channel owner before connecting.")]
+        [Command("Webhook")]
+        [Summary("Toggle the bot sending a message whenever the twitch channel goes live. Messages will be sent to the channel the command is called in.")]
         [RequireUserPermission(GuildPermission.ManageGuild)]
-        public async Task SetChannelAsync([Summary("The twitch channel to connect to")]string channel)
+        public async Task WebhookAsync([Summary("Text to send whenever your channel goes live."), Remainder] string message)
         {
-            await ReplyAsync("Leaving possibly connected twitch channels...");
-            await DisconnectTwitchAsync();
-
-            var twitchuser = await _twitchManager.GetChannelusers(new List<string>{channel});
-
-            var filter = Builders<GuildSettings>.Filter.Eq(g => g.GuildId, Context.Guild.Id);
             var update = Builders<GuildSettings>.Update
-                .Set(g => g.TwitchSettings.DiscordChannel, Context.Channel.Id)
-                .Set(g => g.TwitchSettings.TwitchChannelName, channel)
-                .Set(g => g.TwitchSettings.UserId, Int32.Parse(twitchuser.Users[0].Id))
-                .Set(g => g.TwitchSettings.DiscordChannelname, Context.Channel.Name);
+                .Set(g => g.TwitchSettings.WebhookDiscordChannel, Context.Channel.Id)
+                .Set(g => g.TwitchSettings.WebhookDiscordChannelName, Context.Channel.Name)
+                .Set(g => g.TwitchSettings.WebhookMessage, message);
+            await _guildSettings.UpdateOneAsync(g => g.GuildId == Context.Guild.Id, update);
 
-            await _guildSettings.UpdateOneAsync(filter, update);
+            var settings = await (await _guildSettings.FindAsync(s => s.GuildId == Context.Guild.Id)).FirstOrDefaultAsync();
+            if (settings.TwitchSettings.UserId == null)
+            {
+                await ReplyAsync("Try connecting to a channel before requesting a webhook.");
+                return;
+            }
 
-            await ReplyAsync("Settings have been saved!");
+            var success = await _twitchManager.SubToChannelLiveWebhook((int)settings.TwitchSettings.UserId);
+            if (!success)
+                await ReplyAsync("Could not create webhook.");
+            else
+                await ReplyAsync("You will now receive a message in this channel whenever your twitch channel goes live. Keep in mind that this is experimental and might not yet work correctly.");
         }
 
         [Command("SendMessagesTo")]

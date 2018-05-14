@@ -2,6 +2,10 @@
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
+    "iis": {
+      "applicationUrl": "http://localhost/DeStoofApi",
+      "sslPort": 0
+    },
     "iisExpress": {
       "applicationUrl": "http://localhost:5000/",
       "sslPort": 0
@@ -14,7 +18,8 @@
       "launchUrl": "api/chat",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
-      }
+      },
+      "use64Bit": false
     },
     "DeStoofApi": {
       "commandName": "Project",

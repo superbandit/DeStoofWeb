@@ -20,7 +20,7 @@ namespace DeStoofApi.Services
         private readonly IMongoCollection<ChatMessage> _messages;
         private readonly IMongoCollection<GuildSettings> _guildSettings;
 
-        public MessageService(IMongoDatabase database, TwitchManager twitchManager, DiscordManager discordManager, IHubContext<ChatHub> chatHub, IConfiguration config)
+        public MessageService(IMongoDatabase database, TwitchManager twitchManager, DiscordManager discordManager, IHubContext<ChatHub> chatHub, IConfiguration config, CommandHandler commandHandler)
         {
             var database1 = database;
             _messages = database1.GetCollection<ChatMessage>(config["Secure:Messages"]);
@@ -30,9 +30,10 @@ namespace DeStoofApi.Services
             _twitchManager.MessageReceived += OnChatMessageReceived;
 
             _discordManager = discordManager;
-            _discordManager.MessageReceived += OnChatMessageReceived;
+            commandHandler.MessageReceived += OnChatMessageReceived;
 
             _chatHub = chatHub;
+
         }
 
         public async Task Startup()

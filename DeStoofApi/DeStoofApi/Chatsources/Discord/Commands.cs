@@ -14,16 +14,14 @@ namespace DeStoofApi.Chatsources.Discord
     public class Commands : ModuleBase<SocketCommandContext>
     {
         private readonly CommandService _service;
-        private readonly DiscordManager _discordManager;
 
         private readonly IMongoCollection<GuildSettings> _guildSettings;
         private readonly IMongoCollection<TwitchChatMessage> _twitchChatMessages;
         private readonly IMongoCollection<DiscordChatMessage> _discordChatMessages;
 
-        public Commands(IMongoDatabase mongoDatabase, CommandService service, DiscordManager discordManager, IConfiguration config)
+        public Commands(IMongoDatabase mongoDatabase, CommandService service, IConfiguration config)
         {
             _service = service;
-            _discordManager = discordManager;
             _guildSettings = mongoDatabase.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
             _twitchChatMessages = mongoDatabase.GetCollection<ChatMessage>(config["Secure:Messages"]).OfType<TwitchChatMessage>();
             _discordChatMessages = mongoDatabase.GetCollection<ChatMessage>(config["Secure:Messages"]).OfType<DiscordChatMessage>();
@@ -37,7 +35,6 @@ namespace DeStoofApi.Chatsources.Discord
 
             if (command == null)
             {
-                //For normal users
                 var embedBuilder = new EmbedBuilder
                 {
                     Color = new Color(200, 10, 200),
@@ -45,7 +42,7 @@ namespace DeStoofApi.Chatsources.Discord
                     Description = $"{settings.CommandPrefix}help [command] for command specific help.",
                     Footer = new EmbedFooterBuilder
                     {
-                        Text = $"Made by Superbandit | [{DateTime.Now.ToShortTimeString()}]"
+                        Text = "Made by Superbandit"
                     }
                 };
 
@@ -64,6 +61,7 @@ namespace DeStoofApi.Chatsources.Discord
                     }
                 }
 
+                embedBuilder.WithCurrentTimestamp();
                 var embed = embedBuilder.Build();
                 await ReplyAsync("", false, embed);
             }
@@ -110,13 +108,63 @@ namespace DeStoofApi.Chatsources.Discord
             }            
         }
 
-        [Command("LeaveServer")]
-        [Summary("Leaves the current server")]
-        [RequireUserPermission(GuildPermission.ManageGuild)]
-        public async Task LeaveServer()
+        [Command("Settings")]
+        [Summary("Shows a list of the settings regarding StreamerCompanion.")]
+        public async Task Settings()
         {
-            await ReplyAsync("Cya!");
-            await _discordManager.PartGuild(Context.Guild.Id);
+            var settings = await GetGuildSettings();
+
+            var embedBuilder = new EmbedBuilder
+            {
+                Color = new Color(200, 10, 200),
+                Title = "Settings for StreamerCompanion",
+                Description = "Thank you for using StreamerCompanion!",
+                Footer = new EmbedFooterBuilder
+                {
+                    Text = "Made by Superbandit"
+                }
+            };
+
+            embedBuilder.AddField(f =>
+            {
+                f.Name = ":exclamation: Prefix:";
+                f.Value = settings.CommandPrefix;
+                f.IsInline = true;
+            });
+            embedBuilder.AddField(f =>
+            {
+                f.Name = ":purple_heart: Twitch channel:";
+                f.Value = settings.TwitchSettings.TwitchChannelName ?? "Not set.";
+                f.IsInline = true;
+            });
+            embedBuilder.AddField(f =>
+            {
+                f.Name = ":mailbox_with_mail: Twitch sending to:";
+                f.Value = settings.TwitchSettings.SendTo.ToString();
+                f.IsInline = true;
+            });
+            embedBuilder.AddField(f =>
+            {
+                f.Name = ":blue_heart: Discord channel:";
+                f.Value = settings.TwitchSettings.DiscordChannelname ?? "Not set.";
+                f.IsInline = true;
+            });
+            embedBuilder.AddField(f =>
+            {
+                f.Name = ":mailbox_with_mail: Discord sending to:";
+                f.Value = settings.DiscordSettings.SendTo;
+                f.IsInline = true;
+            });
+            embedBuilder.AddField(f =>
+            {
+                f.Name = ":fishing_pole_and_fish: Webhook discord channel:";
+                f.Value = settings.TwitchSettings.WebhookDiscordChannelName ?? "Not set.";
+                f.IsInline = true;
+            });
+
+            embedBuilder.WithCurrentTimestamp();
+            var embed = embedBuilder.Build();
+            await ReplyAsync("", false, embed);
         }
 
         [Command("StreamerCompanion SetPrefix")]
@@ -127,16 +175,6 @@ namespace DeStoofApi.Chatsources.Discord
             var update = Builders<GuildSettings>.Update.Set(g => g.CommandPrefix, prefix);
             await _guildSettings.FindOneAndUpdateAsync(g => g.GuildId == Context.Guild.Id, update);
             await ReplyAsync($"Command prefix has been set to {prefix}");
-        }
-
-        [Command("ResetSettings")]
-        [Summary("Resets all saved settings.")]
-        [RequireUserPermission(GuildPermission.ManageGuild)]
-        public async Task ResetSettingsAsync()
-        {
-            await _guildSettings.ReplaceOneAsync(g => g.GuildId == Context.Guild.Id,
-                new GuildSettings { GuildId = Context.Guild.Id }, new UpdateOptions { IsUpsert = true });
-            await ReplyAsync("Settings have been reset!");
         }
 
         [Command("Stats")]
