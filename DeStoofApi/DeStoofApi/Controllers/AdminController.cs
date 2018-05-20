@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DeStoofApi.Controllers
 {
-    [Route("api/Admin"), Authorize(Roles = "Admin")]
+    [Route("api/admin"), Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
         private readonly DiscordManager _discordManager;
@@ -44,7 +44,7 @@ namespace DeStoofApi.Controllers
             }
         }
 
-        [HttpPost, Route("partGuild/guildId")]
+        [HttpPost, Route("partGuild/{guildId}")]
         public async Task<IActionResult> PartGuild([FromRoute] ulong guildId)
         {
             try

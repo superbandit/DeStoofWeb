@@ -57,7 +57,8 @@ namespace DeStoofApi
 
             services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
             {
-                LogLevel = LogSeverity.Info
+                LogLevel = LogSeverity.Info,
+                AlwaysDownloadUsers = true                
             }));
             services.AddSingleton<CommandService>();
             services.AddSingleton<TwitchManager>();
@@ -67,6 +68,7 @@ namespace DeStoofApi
             services.AddSingleton<IServiceProvider>(services.BuildServiceProvider());
 
             services.AddScoped<ChatController>();
+            services.AddTransient<LoggingService>();
 
             services.AddMvc();
         }
