@@ -8,6 +8,7 @@ using System.Linq;
 using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Form.Discord;
 using DeStoofApi.Models.Guilds;
+using DeStoofApi.Services;
 using Discord.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
@@ -22,12 +23,14 @@ namespace DeStoofApi.Chatsources.Discord
         private readonly IConfiguration _config;
         private readonly IServiceProvider _serviceProvider;
         private readonly IMongoCollection<GuildSettings> _guildSettings;
+        private readonly LoggingService _loggingService;
 
-        public DiscordManager(IConfiguration config, DiscordSocketClient client, IServiceProvider serviceProvider, IMongoDatabase mongoDatabase)
+        public DiscordManager(IConfiguration config, DiscordSocketClient client, IServiceProvider serviceProvider, IMongoDatabase mongoDatabase, LoggingService loggingService)
         {
             _config = config;
             _client = client;
             _serviceProvider = serviceProvider;
+            _loggingService = loggingService;
             _guildSettings = mongoDatabase.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
         }
 
@@ -51,8 +54,10 @@ namespace DeStoofApi.Chatsources.Discord
 
         private async Task GuildJoined(SocketGuild arg)
         {
-            await _guildSettings.ReplaceOneAsync(g => g.GuildId == arg.Id,
+            var result = await _guildSettings.ReplaceOneAsync(g => g.GuildId == arg.Id,
                 new GuildSettings { GuildId = arg.Id }, new UpdateOptions { IsUpsert = true });
+
+            await _loggingService.LogGuildJoin(arg, result.IsAcknowledged && result.MatchedCount > 0, true);
         }
 
         private async Task GuildLeft(SocketGuild arg)
@@ -61,6 +66,8 @@ namespace DeStoofApi.Chatsources.Discord
                 .Set(g => g.Active, false);
 
             await _guildSettings.UpdateOneAsync(x => x.GuildId == arg.Id, update);
+
+            await _loggingService.LogGuildJoin(arg, false, false);
         }
 
         public async Task PartGuild(ulong guildId)
@@ -86,7 +93,7 @@ namespace DeStoofApi.Chatsources.Discord
             {
                 GuildId = guild.Id,
                 Name = guild.Name,
-                Owner = guild.Owner.Username
+                Owner = guild.Owner?.Username
             }).ToList();
         }
 

@@ -48,8 +48,6 @@ namespace DeStoofApi.Services
             await SendToPlatforms(args.ChatMessage);
 
             await _chatHub.Clients.All.SendAsync("Send", args.ChatMessage);
-
-            _messages.InsertOne(args.ChatMessage);
         }
 
         private async Task<GuildSettings> GetGuildSettings(ulong guildId)
@@ -74,6 +72,8 @@ namespace DeStoofApi.Services
                         _discordManager.SendChatMessage((ulong) settings.TwitchSettings.DiscordChannel, message);
                 if (message.SendTo.HasFlag(Enums.ChatPlatforms.Twitch))
                     await _twitchManager.SendMessage(message, settings.TwitchSettings.TwitchChannelName);
+
+                _messages.InsertOne(message);
             }
 
         }

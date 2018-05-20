@@ -9,104 +9,22 @@ using Discord.Commands;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 
-namespace DeStoofApi.Chatsources.Discord
+namespace DeStoofApi.Chatsources.Discord.Modules
 {
+    [RequireContext(ContextType.Guild)]
     public class Commands : ModuleBase<SocketCommandContext>
     {
-        private readonly CommandService _service;
 
         private readonly IMongoCollection<GuildSettings> _guildSettings;
         private readonly IMongoCollection<TwitchChatMessage> _twitchChatMessages;
         private readonly IMongoCollection<DiscordChatMessage> _discordChatMessages;
 
-        public Commands(IMongoDatabase mongoDatabase, CommandService service, IConfiguration config)
+        public Commands(IMongoDatabase mongoDatabase, IConfiguration config)
         {
-            _service = service;
             _guildSettings = mongoDatabase.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
             _twitchChatMessages = mongoDatabase.GetCollection<ChatMessage>(config["Secure:Messages"]).OfType<TwitchChatMessage>();
             _discordChatMessages = mongoDatabase.GetCollection<ChatMessage>(config["Secure:Messages"]).OfType<DiscordChatMessage>();
-        }
-
-        [Command("Help")]
-        [Summary("Lists all available commands.")]
-        public async Task CommandsAsync([Summary("Command of which help should be displayed."), Remainder] string command = null)
-        {
-            var settings = await GetGuildSettings();
-
-            if (command == null)
-            {
-                var embedBuilder = new EmbedBuilder
-                {
-                    Color = new Color(200, 10, 200),
-                    Title = "Commands for StreamerCompanion",
-                    Description = $"{settings.CommandPrefix}help [command] for command specific help.",
-                    Footer = new EmbedFooterBuilder
-                    {
-                        Text = "Made by Superbandit"
-                    }
-                };
-
-                if (!(Context.User is IGuildUser user)) return;
-
-                foreach (var c in _service.Commands)
-                {
-                    var condition = (RequireUserPermissionAttribute)c.Preconditions.FirstOrDefault(p => p is RequireUserPermissionAttribute);
-                    if (condition == null || condition.GuildPermission !=null && user.GuildPermissions.Has((GuildPermission) condition.GuildPermission))
-                    {
-                        embedBuilder.AddField(a =>
-                        {
-                            a.Name = $"{settings.CommandPrefix}{c.Aliases.FirstOrDefault()}";
-                            a.Value = c.Summary ?? "Undocumented";
-                        });
-                    }
-                }
-
-                embedBuilder.WithCurrentTimestamp();
-                var embed = embedBuilder.Build();
-                await ReplyAsync("", false, embed);
-            }
-            else
-            {
-                var commandFound = _service.Commands.FirstOrDefault(c => c.Aliases.Contains(command));
-
-                if (commandFound == null)
-                {
-                    await ReplyAsync("Command could not be found.");
-                    return;
-                }
-
-                if (commandFound.Attributes.Any(a => a is RequireUserPermissionAttribute) && Context.User is IGuildUser user && !user.GuildPermissions.ManageChannels)
-                {
-                    await ReplyAsync("Command could not be found.");
-                    return;
-                }
-
-                var embedBuilder = new EmbedBuilder
-                {
-                    Color = new Color(10, 200, 10),
-                    Title = $"Help for {command}",
-                    Description = $"{commandFound.Summary} \n" +
-                                  $"{(commandFound.Parameters.Count > 0 ? "Parameters:" : "No parameters")}",
-                    Footer = new EmbedFooterBuilder
-                    {
-                        Text = "Made by Superbandit"
-                    }
-                };
-
-                foreach (var param in commandFound.Parameters)
-                {
-                    embedBuilder.AddField(f =>
-                    {
-                        f.Name = param.Name;
-                        f.Value = $"{(param.IsOptional? "(optional)" : "")} {param.Summary ?? "Undocumented"}";
-                    });
-                }
-
-                embedBuilder.WithCurrentTimestamp();
-                var embed = embedBuilder.Build();
-                await ReplyAsync("", false, embed);
-            }            
-        }
+        }       
 
         [Command("Settings")]
         [Summary("Shows a list of the settings regarding StreamerCompanion.")]
@@ -204,7 +122,7 @@ namespace DeStoofApi.Chatsources.Discord
                 DiscordChatMessage oldestMessage = discordMessages.FirstOrDefault(m => m.Date == oldestMessageDate);
                 embedBuilder.AddField(f =>
                 {
-                    f.Name = "First recorded message:";
+                    f.Name = "First recorded command:";
                     f.Value = $"**Date:** {oldestMessageDate} \n" +
                               $"**User:** {oldestMessage?.User} \n" +
                               $"**Content:** {(oldestMessage?.Message.Length >= 30 ? oldestMessage.Message.Substring(0, 30) + "..." : oldestMessage?.Message)} \n ";
@@ -212,7 +130,7 @@ namespace DeStoofApi.Chatsources.Discord
 
                 embedBuilder.AddField(f =>
                 {
-                    f.Name = "Message amount:";
+                    f.Name = "Command amount:";
                     f.Value = $"**Discord:** {discordMessages.Count} \n" +
                               $"**Twitch:** {twitchMessages}";
                 });
@@ -225,7 +143,7 @@ namespace DeStoofApi.Chatsources.Discord
                 DiscordChatMessage oldestMessage = discordMessages.FirstOrDefault(m => m.Date == oldestMessageDate);
                 embedBuilder.AddField(f =>
                 {
-                    f.Name = "First recorded message:";
+                    f.Name = "First recorded command:";
                     f.Value = $"**Date:** {oldestMessageDate} \n" +
                               $"**Username at the time:** {oldestMessage?.User} \n" +
                               $"**Content:** {(oldestMessage?.Message.Length >= 30 ? oldestMessage.Message.Substring(0, 30) + "..." : oldestMessage?.Message)} \n ";

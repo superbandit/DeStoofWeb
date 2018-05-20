@@ -79,9 +79,9 @@ namespace DeStoofApi.Chatsources.Twitch
 
             if (message.IsMe) return;
 
-            var settings = await (await _guildSettings.FindAsync(g => g.TwitchSettings.TwitchChannelName == message.Channel)).FirstOrDefaultAsync();
+            var settings = await (await _guildSettings.FindAsync(g => g.TwitchSettings.TwitchChannelName.ToLower() == message.Channel.ToLower())).FirstOrDefaultAsync();
             
-            TwitchChatMessage chatMessage = new TwitchChatMessage
+            var chatMessage = new TwitchChatMessage
             {
                 Channel = message.Channel,
                 Date = DateTime.Now,
