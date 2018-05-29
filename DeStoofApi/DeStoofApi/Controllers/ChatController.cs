@@ -30,7 +30,7 @@ namespace DeStoofApi.Controllers
             if (stream == null) return Ok();
 
             if (settings.TwitchSettings.WebhookDiscordChannel != null)
-                _discordManager.SendMessage((ulong) settings.TwitchSettings.WebhookDiscordChannel,
+                await _discordManager.SendMessage((ulong) settings.TwitchSettings.WebhookDiscordChannel,
                     settings.TwitchSettings.WebhookMessage);
 
             return Ok();

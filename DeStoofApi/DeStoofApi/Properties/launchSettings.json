@@ -14,7 +14,7 @@
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "api/chat",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
@@ -23,7 +23,7 @@
     },
     "DeStoofApi": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "api/chat",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"

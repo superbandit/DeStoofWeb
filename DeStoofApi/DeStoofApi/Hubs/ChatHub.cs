@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using DeStoofApi.Models.ChatMessages;
+using DeStoofApi.Models.Messages;
 using Microsoft.AspNetCore.SignalR;
 
 namespace DeStoofApi.Hubs

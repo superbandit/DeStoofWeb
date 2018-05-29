@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using DeStoofApi.Models;
-using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Guilds;
+using DeStoofApi.Models.Messages;
 using Discord;
 using Discord.Commands;
 using Microsoft.Extensions.Configuration;
@@ -80,7 +79,7 @@ namespace DeStoofApi.Chatsources.Discord.Modules
                 f.IsInline = true;
             });
 
-            embedBuilder.WithCurrentTimestamp();
+            embedBuilder.WithTimestamp(DateTimeOffset.Now);
             var embed = embedBuilder.Build();
             await ReplyAsync("", false, embed);
         }
@@ -115,7 +114,7 @@ namespace DeStoofApi.Chatsources.Discord.Modules
             if (user == null)
             {
                 embedBuilder.Description = "Specify a user to see user specific stats.";
-                var discordMessages = await (await _discordChatMessages.FindAsync(m => m.GuildIds.Contains(Context.Guild.Id))).ToListAsync();
+                var discordMessages = await (await _discordChatMessages.FindAsync(m => m.GuildId == Context.Guild.Id)).ToListAsync();
                 var twitchMessages = await _twitchChatMessages.CountAsync(m => m.Channel == settings.TwitchSettings.TwitchChannelName);
 
                 DateTime oldestMessageDate = discordMessages.Min(d => d.Date);
@@ -137,30 +136,43 @@ namespace DeStoofApi.Chatsources.Discord.Modules
             }
             else
             {
-                var discordMessages = await (await _discordChatMessages.FindAsync(m => m.GuildIds.Contains(Context.Guild.Id) && m.UserId == user.Id)).ToListAsync();
+                var messages = await _discordChatMessages.FindAsync(m => m.GuildId == Context.Guild.Id && m.UserId == user.Id);
+                var discordMessages = await messages.ToListAsync();
 
-                DateTime oldestMessageDate = discordMessages.Min(d => d.Date);
-                DiscordChatMessage oldestMessage = discordMessages.FirstOrDefault(m => m.Date == oldestMessageDate);
-                embedBuilder.AddField(f =>
+                if (discordMessages != null)
                 {
-                    f.Name = "First recorded command:";
-                    f.Value = $"**Date:** {oldestMessageDate} \n" +
-                              $"**Username at the time:** {oldestMessage?.User} \n" +
-                              $"**Content:** {(oldestMessage?.Message.Length >= 30 ? oldestMessage.Message.Substring(0, 30) + "..." : oldestMessage?.Message)} \n ";
-                });
+                    DateTime oldestMessageDate = discordMessages.Min(d => d.Date);
+                    DiscordChatMessage oldestMessage = discordMessages.FirstOrDefault(m => m.Date == oldestMessageDate);
+                    embedBuilder.AddField(f =>
+                    {
+                        f.Name = "First recorded command:";
+                        f.Value = $"**Date:** {oldestMessageDate} \n" +
+                                  $"**Username at the time:** {oldestMessage?.User} \n" +
+                                  $"**Content:** {(oldestMessage?.Message.Length >= 30 ? oldestMessage.Message.Substring(0, 30) + "..." : oldestMessage?.Message)} \n ";
+                    });
 
-                embedBuilder.AddField(f =>
+                    embedBuilder.AddField(f =>
+                    {
+                        f.Name = "Discord messages:";
+                        f.Value = discordMessages.Count;
+                    });
+                }
+                else
                 {
-                    f.Name = "Discord messages:";
-                    f.Value = discordMessages.Count;
-                });
+                    embedBuilder.AddField(f =>
+                    {
+                        f.Name = "No commands could be found by this user.";
+                        f.Value = "Literally 0, nothing, nada. \n" +
+                                  "Could be because of the new update.";
+                    });
+                }
             }
 
-            embedBuilder.WithCurrentTimestamp();
+            embedBuilder.WithTimestamp(DateTimeOffset.Now);
             var embed = embedBuilder.Build();
             await ReplyAsync("", false, embed);
         }
-
+        /*
         [Command("SendMessagesTo")]
         [Summary("Specify what platforms you want the discord messages sent to seperated by a space. Platforms: discord twitch")]
         [RequireUserPermission(GuildPermission.ManageGuild)]
@@ -188,7 +200,7 @@ namespace DeStoofApi.Chatsources.Discord.Modules
                 await ReplyAsync("Settings have not been updated as all given parameters could not be understood.");
             }
         }
-
+        */
         private async Task<GuildSettings> GetGuildSettings()
         {
             return await(await _guildSettings.FindAsync(s => s.GuildId == Context.Guild.Id)).FirstOrDefaultAsync();
