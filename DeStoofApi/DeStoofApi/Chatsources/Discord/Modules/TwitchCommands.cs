@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DeStoofApi.Chatsources.Twitch;
 using DeStoofApi.Extensions;
-using DeStoofApi.Models;
 using DeStoofApi.Models.Guilds;
 using Discord;
 using Discord.Commands;
@@ -34,7 +33,7 @@ namespace DeStoofApi.Chatsources.Discord.Modules
                 _twitchManager.LeaveTwitchChannel(Context.GuildSettings.TwitchSettings.TwitchChannelName);
             else if (Context.GuildSettings.TwitchSettings?.TwitchChannelName == null && channel == null)
             {
-                await ReplyAsync("You have to specify a twitch channel the first time you call this command.");
+                await ReplyAsync("You have to specify a twitch channel the first time you call this command. You can find this by clicking on your profile in the top right, then click on channel. Your channel name will be in the addressbar after the standard twitch address.");
                 return;
             }
 
@@ -79,7 +78,7 @@ namespace DeStoofApi.Chatsources.Discord.Modules
         }
 
         [Command("Tracker")]
-        [Summary("Toggle the bot sending a message whenever the twitch channel goes live. Messages will be sent to the channel the command is called in.")]
+        [Summary("Toggle the bot sending a message whenever the twitch channel goes live. Messages will be sent to the channel the command is called in. You need to have connected to a chat once before calling this command.")]
         [RequireUserPermission(GuildPermission.ManageGuild)]
         public async Task WebhookAsync([Summary("Text to send whenever your channel goes live."), Remainder] string message)
         {
@@ -101,7 +100,7 @@ namespace DeStoofApi.Chatsources.Discord.Modules
             else
                 await ReplyAsync("You will now receive a message in this channel whenever your twitch channel goes live. Keep in mind that this is experimental and might not yet work correctly.");
         }
-
+        /*
         [Command("SendMessagesTo")]
         [Summary("Specify what platforms you want the twitch chat messages sent to seperated by a space. Platforms: discord twitch")]
         [RequireUserPermission(GuildPermission.ManageGuild)]
@@ -128,6 +127,6 @@ namespace DeStoofApi.Chatsources.Discord.Modules
             {
                 await ReplyAsync("Settings have not been updated as all given parameters could not be understood.");
             }
-        }
+        }*/
     }
 }

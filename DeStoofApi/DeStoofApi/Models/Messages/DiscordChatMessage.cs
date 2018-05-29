@@ -1,4 +1,4 @@
-﻿namespace DeStoofApi.Models.ChatMessages
+﻿namespace DeStoofApi.Models.Messages
 {
     public class DiscordChatMessage : ChatMessage
     {

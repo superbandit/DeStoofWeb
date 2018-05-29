@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DeStoofApi.EventArgs;
-using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Guilds;
+using DeStoofApi.Models.Messages;
+using DeStoofApi.Models.Messages.CustomCommands;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using TwitchLib.Api;
@@ -83,21 +84,31 @@ namespace DeStoofApi.Chatsources.Twitch
             
             var chatMessage = new TwitchChatMessage
             {
+                GuildId = settings.GuildId,
                 Channel = message.Channel,
                 Date = DateTime.Now,
                 Message = message.Message,
                 User = message.DisplayName,
                 SendTo = settings.TwitchSettings.SendTo
             };
-            chatMessage.GuildIds.Add(settings.GuildId);
 
-            MessageReceived?.Invoke(this, new MessageReceivedEventArgs(chatMessage));
+            var context = new CustomCommandContext(settings, chatMessage);
+
+            MessageReceived?.Invoke(this, new MessageReceivedEventArgs(chatMessage, context));
         }
 
-        public Task SendMessage(Models.ChatMessages.ChatMessage message, string channel)
+        public Task SendChatMessage(Models.Messages.ChatMessage message, string channel)
         {
             if (_client.JoinedChannels.Any(c => c.Channel == channel))
                 _client.SendMessage(channel, $"{message.User}: {message.Message}");
+
+            return Task.CompletedTask;
+        }
+
+        public Task SendMessage(string message, string channel)
+        {
+            if (_client.JoinedChannels.Any(c => c.Channel == channel))
+                _client.SendMessage(channel, message);
 
             return Task.CompletedTask;
         }

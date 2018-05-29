@@ -3,8 +3,9 @@ using System.Reflection;
 using System.Threading.Tasks;
 using DeStoofApi.EventArgs;
 using DeStoofApi.Extensions;
-using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Guilds;
+using DeStoofApi.Models.Messages;
+using DeStoofApi.Models.Messages.CustomCommands;
 using DeStoofApi.Services;
 using Discord;
 using Discord.Commands;
@@ -72,6 +73,7 @@ namespace DeStoofApi.Chatsources.Discord
 
             var chatMessage = new DiscordChatMessage
             {
+                GuildId = channel.Guild.Id,
                 User = ((IGuildUser)message.Author).Nickname ?? message.Author.Username,
                 UserId = message.Author.Id,
                 Message = message.Content,
@@ -79,9 +81,10 @@ namespace DeStoofApi.Chatsources.Discord
                 SendTo = settings.DiscordSettings.SendTo,
                 ChannelId = channel.Id
             };
-            chatMessage.GuildIds.Add(channel.Guild.Id);
 
-            if (MessageReceived != null) await MessageReceived(this, new MessageReceivedEventArgs(chatMessage));
+            var context = new CustomCommandContext(settings, chatMessage);
+
+            if (MessageReceived != null) await MessageReceived(this, new MessageReceivedEventArgs(chatMessage, context));
         }
 
         private async Task HandleDmMessage(SocketUserMessage message)

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using DeStoofApi.Extensions;
 using Discord;
@@ -25,7 +26,7 @@ namespace DeStoofApi.Chatsources.Discord.Modules
                 {
                     Color = new Color(200, 10, 200),
                     Title = "Commands for StreamerCompanion",
-                    Description = $"{(Context.GuildSettings == null ? "Call this command in a server/guild to see the full ist of options." : $"Call {Context.GuildSettings.CommandPrefix}[Command] for command-specific help")}",
+                    Description = $"{(Context.GuildSettings == null ? "Call this command in a server/guild to see the full list of options." : $"Call {Context.GuildSettings.CommandPrefix}help [command] for command-specific help.")}",
                     Footer = new EmbedFooterBuilder
                     {
                         Text = "Made by Superbandit"
@@ -43,7 +44,7 @@ namespace DeStoofApi.Chatsources.Discord.Modules
                     });
                 }
 
-                embedBuilder.WithCurrentTimestamp();
+                embedBuilder.WithTimestamp(DateTimeOffset.Now);
                 var embed = embedBuilder.Build();
                 await ReplyAsync("", false, embed);
             }
@@ -65,18 +66,17 @@ namespace DeStoofApi.Chatsources.Discord.Modules
 
                 var embedBuilder = new EmbedBuilder
                 {
-                    Color = new Color(10, 200, 10),
+                    Color = new Color(200, 10, 200),
                     Title = $"Help for {command}",
-                    Description = $"{commandFound.Summary} \n" +
-                                  $"{(commandFound.Parameters.Count > 0 ? "Parameters:" : "No parameters")}",
                     Footer = new EmbedFooterBuilder
                     {
                         Text = "Made by Superbandit"
                     }
                 };
-
+                string paramStr = string.Empty;
                 foreach (var param in commandFound.Parameters)
                 {
+                    paramStr += $"[{param.Name}] ";
                     embedBuilder.AddField(f =>
                     {
                         f.Name = param.Name;
@@ -84,7 +84,9 @@ namespace DeStoofApi.Chatsources.Discord.Modules
                     });
                 }
 
-                embedBuilder.WithCurrentTimestamp();
+                embedBuilder.Description = $"{commandFound.Summary} \n" +
+                                           $"Usage: {Context.GuildSettings.CommandPrefix}{command} {paramStr}\n";
+                embedBuilder.WithTimestamp(DateTimeOffset.Now);
                 var embed = embedBuilder.Build();
                 await ReplyAsync("", false, embed);
             }

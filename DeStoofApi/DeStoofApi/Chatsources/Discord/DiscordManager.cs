@@ -5,9 +5,9 @@ using Discord;
 using Discord.WebSocket;
 using System.Collections.Generic;
 using System.Linq;
-using DeStoofApi.Models.ChatMessages;
 using DeStoofApi.Models.Form.Discord;
 using DeStoofApi.Models.Guilds;
+using DeStoofApi.Models.Messages;
 using DeStoofApi.Services;
 using Discord.Commands;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,7 +48,7 @@ namespace DeStoofApi.Chatsources.Discord
             _client.Ready += ClientReady;
             _client.JoinedGuild += GuildJoined;
             _client.LeftGuild += GuildLeft;
-
+            
             return true;
         }
 
@@ -117,7 +117,7 @@ namespace DeStoofApi.Chatsources.Discord
             if (channel != null) await channel.SendMessageAsync(toSend);
         }
 
-        public async void SendMessage(ulong channelNumber, string message, Embed embed = null)
+        public async Task SendMessage(ulong channelNumber, string message, Embed embed = null)
         {
             if (_client.GetChannel(channelNumber) is SocketTextChannel channel) await channel.SendMessageAsync(message, false, embed);
         }
