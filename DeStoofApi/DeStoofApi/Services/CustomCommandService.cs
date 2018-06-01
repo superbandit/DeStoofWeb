@@ -24,7 +24,7 @@ namespace DeStoofApi.Services
 
             foreach (var c in context.GuildSettings.CustomCommands)
             {
-                if (!message.Message.Contains(c.Prefix)) continue;
+                if (!message.Message.ToLower().Contains(c.Prefix.ToLower())) continue;
 
                 var result = compiler.CompileCustomCommand(c);
                 if(message is DiscordChatMessage d) await _discordManager.SendMessage(d.ChannelId, result);

@@ -43,12 +43,20 @@ namespace DeStoofApi.Chatsources.Twitch
             _twitchApi.Settings.AccessToken = _config["Secure:TwitchApiToken"];
 
             _client.OnMessageReceived += OnMessageReceived;
+            _client.AutoReListenOnException = true;
+            _client.OnDisconnected += OnDisconnected;
 
             _client.Connect();
         }
 
+        private void OnDisconnected(object sender, OnDisconnectedArgs e)
+        {
+            _client.Reconnect();
+        }
+
         public bool JoinTwitchChannel(string channel)
         {
+
             if (_client.JoinedChannels.Any(c => c.Channel == channel)) return false;
 
             _client.JoinChannel(channel);
