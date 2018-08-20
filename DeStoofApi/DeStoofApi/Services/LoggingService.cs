@@ -28,11 +28,6 @@ namespace DeStoofApi.Services
 
                 embedBuilder.AddField(f =>
                 {
-                    f.Name = "Caller:";
-                    f.Value = context.User.Mention;
-                });
-                embedBuilder.AddField(f =>
-                {
                     f.Name = "Guild:";
                     f.Value = $"**Name:** {context.Guild.Name} \n" +
                               $"**Id:** {context.Guild.Id}";

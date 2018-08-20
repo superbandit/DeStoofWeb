@@ -1,6 +1,6 @@
-﻿using DeStoofApi.Models.Guilds;
-using Discord.Commands;
+﻿using Discord.Commands;
 using Discord.WebSocket;
+using Models.Domain.Guilds;
 
 namespace DeStoofApi.Extensions
 {

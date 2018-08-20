@@ -29,21 +29,6 @@ namespace DeStoofApi.Controllers
             }
         }
 
-        [HttpPost, Route("globalMessageToServerOwners")]
-        public async Task<IActionResult> GetActiveDiscordServers([FromBody] string message)
-        {
-            try
-            {
-                await _discordManager.GlobalMessageToServerOwners(message);
-
-                return Ok("Message has been sent.");
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e);
-            }
-        }
-
         [HttpPost, Route("partGuild/{guildId}")]
         public async Task<IActionResult> PartGuild([FromRoute] ulong guildId)
         {

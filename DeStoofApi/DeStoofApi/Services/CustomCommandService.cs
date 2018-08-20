@@ -1,9 +1,7 @@
 ﻿using System.Threading.Tasks;
 using DeStoofApi.Chatsources.Discord;
 using DeStoofApi.Chatsources.Twitch;
-using DeStoofApi.Extensions;
-using DeStoofApi.Models.Messages;
-using DeStoofApi.Models.Messages.CustomCommands;
+using Models.Domain.Messages;
 
 namespace DeStoofApi.Services
 {
@@ -18,17 +16,17 @@ namespace DeStoofApi.Services
             _twitchManager = twitchManager;
         }
 
-        public async Task CheckForCustomCommands(ChatMessage message, CustomCommandContext context)
+        public async Task CheckForCustomCommands(CustomMessageContext context)
         {
             var compiler = new CustomCommandCompiler(context);
 
             foreach (var c in context.GuildSettings.CustomCommands)
             {
-                if (!message.Message.Contains(c.Prefix)) continue;
+                if (!context.Message.Message.ToLower().Contains(c.Prefix.ToLower())) continue;
 
                 var result = compiler.CompileCustomCommand(c);
-                if(message is DiscordChatMessage d) await _discordManager.SendMessage(d.ChannelId, result);
-                if (message is TwitchChatMessage t) await _twitchManager.SendMessage(result, t.Channel);
+                if(context.Message is DiscordChatMessage d) await _discordManager.SendMessage(d.ChannelId, result);
+                if (context.Message is TwitchChatMessage t) await _twitchManager.SendMessage(result, t.Channel);
             }
         }
     }

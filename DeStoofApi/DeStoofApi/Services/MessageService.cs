@@ -1,69 +1,47 @@
-﻿using MongoDB.Driver;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using DeStoofApi.Chatsources.Discord;
 using DeStoofApi.Chatsources.Twitch;
-using DeStoofApi.EventArgs;
-using DeStoofApi.Models;
-using DeStoofApi.Models.Guilds;
-using DeStoofApi.Models.Messages;
-using Microsoft.Extensions.Configuration;
+using Models.Domain.Messages;
 
 namespace DeStoofApi.Services
 {
     public class MessageService
     {
-        private readonly TwitchManager _twitchManager;
         private readonly DiscordManager _discordManager;
+        private readonly TwitchManager _twitchManager;
         private readonly CustomCommandService _customCommandService;
 
-        private readonly IMongoCollection<ChatMessage> _messages;
-
-        public MessageService(IMongoDatabase database, TwitchManager twitchManager, DiscordManager discordManager, IConfiguration config, CommandHandler commandHandler)
+        public MessageService(DiscordManager discordManager, TwitchManager twitchManager, CustomCommandService customCommandService)
         {
-            var db = database;
-            _messages = db.GetCollection<ChatMessage>(config["Secure:Messages"]);
-
-            _customCommandService = new CustomCommandService(discordManager, twitchManager);
-
-            _twitchManager = twitchManager;
-            _twitchManager.MessageReceived += OnChatMessageReceived;
-
             _discordManager = discordManager;
-            commandHandler.MessageReceived += OnChatMessageReceived;
+            _twitchManager = twitchManager;
+            _customCommandService = customCommandService;
         }
 
-        public async Task Startup()
+        public async Task OnChatMessageReceived(CustomMessageContext context)
         {
-            _twitchManager.Start();
-            await _discordManager.RunBotAsync();
+            await _customCommandService.CheckForCustomCommands(context);
+
+            if (context.Message is DiscordChatMessage a && a.ChannelId != context.GuildSettings.TwitchSettings?.DiscordChatChannel?.Id) return;
+
+            await SendToPlatforms(context);
         }
 
-
-        private async Task OnChatMessageReceived(object sender, MessageReceivedEventArgs args)
+        private async Task SendToPlatforms(CustomMessageContext context)
         {
-            await _customCommandService.CheckForCustomCommands(args.ChatMessage, args.CommandContext);
-
-            if (args.ChatMessage.Message.StartsWith(args.CommandContext.GuildSettings.CommandPrefix))
+            var message = context.Message;
+            switch (message)
             {
-                _messages.InsertOne(args.ChatMessage);
-                return;
+                case TwitchChatMessage _ when context.GuildSettings.TwitchSettings.DiscordChatChannel != null:
+                    if (message.Message.Contains("@everyone")) message.Message = message.Message.Replace("@everyone", "/@everyone");
+                    if (message.Message.Contains("@here")) message.Message = message.Message.Replace("@here", "/@here");
+                    _discordManager.SendMessage(context.GuildSettings.TwitchSettings.DiscordChatChannel.Id, message);
+
+                    break;
+                case DiscordChatMessage _ when context.GuildSettings.TwitchSettings.ChannelName != null:
+                    await _twitchManager.SendChatMessage(message, context.GuildSettings.TwitchSettings.ChannelName);
+                    break;
             }
-
-            if (args.ChatMessage is DiscordChatMessage a && a.ChannelId != args.CommandContext.GuildSettings.TwitchSettings.DiscordChannel) return;
-
-            await SendToPlatforms(args.ChatMessage, args.CommandContext.GuildSettings);
-            _messages.InsertOne(args.ChatMessage);
-
-            //await _chatHub.Clients.All.SendAsync("Send", args.ChatMessage);
-        }
-
-        private async Task SendToPlatforms(ChatMessage message, GuildSettings settings)
-        {               
-            if (message.SendTo.HasFlag(Enums.ChatPlatforms.Discord))
-                if (settings.TwitchSettings.DiscordChannel != null)
-                    _discordManager.SendChatMessage((ulong) settings.TwitchSettings.DiscordChannel, message);
-            if (message.SendTo.HasFlag(Enums.ChatPlatforms.Twitch))
-                await _twitchManager.SendChatMessage(message, settings.TwitchSettings.TwitchChannelName);            
         }
     }
 }
