@@ -1,24 +1,14 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DeStoofApi.Extensions;
-using DeStoofApi.Models.Guilds;
-using DeStoofApi.Models.Messages.CustomCommands;
 using Discord;
 using Discord.Commands;
-using Microsoft.Extensions.Configuration;
-using MongoDB.Driver;
+using Models.Domain.Guilds;
 
 namespace DeStoofApi.Chatsources.Discord.Modules
 {
     public class CustomCommandCommands : ModuleBase<SettingsCommandContext>
     {
-        private readonly IMongoCollection<GuildSettings> _guildSettings;
-
-        public CustomCommandCommands(IMongoDatabase mongoDatabase, IConfiguration config)
-        {
-            _guildSettings = mongoDatabase.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
-        }
-
         [Command("CreateCommand")]
         [Summary("Create a custom command! Command will be active in twitch and discord. For more information call help on this command.")]
         [RequireUserPermission(GuildPermission.ManageGuild)]
@@ -31,9 +21,7 @@ namespace DeStoofApi.Chatsources.Discord.Modules
                      "{channel} - Prints your twitchchannel if it has been set."), Remainder] string output)
         {
             var customCommand = new CustomCommand(true, keyword, output);
-            var update = Builders<GuildSettings>.Update
-                .Push(g => g.CustomCommands, customCommand);
-            await _guildSettings.UpdateOneAsync(g => g.GuildId == Context.Guild.Id, update);
+            Context.GuildSettings.CustomCommands.Add(customCommand);
             await ReplyAsync("Custom command has been added. Try it!");
         }
 
@@ -70,10 +58,8 @@ namespace DeStoofApi.Chatsources.Discord.Modules
         [RequireUserPermission(GuildPermission.ManageGuild)]
         public async Task DeleteCommand([Summary("Keyword of command to be deleted.")]string keyword)
         {
-            var update = Builders<GuildSettings>.Update
-                .PullFilter(s => s.CustomCommands, c => c.Prefix == keyword);
-            var result = await _guildSettings.UpdateOneAsync(g => g.GuildId == Context.Guild.Id, update);
-            if (result.ModifiedCount > 0)
+            var removed = Context.GuildSettings.CustomCommands.RemoveAll(c => c.Prefix == keyword);
+            if (removed > 0)
             {
                 await ReplyAsync("Custom command has been deleted. These were his final words:");
                 return;

@@ -1,12 +1,12 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using DeStoofApi.Chatsources.Discord;
-using DeStoofApi.Models.Guilds;
-using DeStoofApi.Models.Incoming;
+using DeStoofApi.Chatsources.Twitch;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
+using Models.Domain.Guilds;
+using Models.View.External;
+using Raven.Client.Documents.Session;
 
 namespace DeStoofApi.Controllers
 {
@@ -14,24 +14,30 @@ namespace DeStoofApi.Controllers
     public class ChatController : Controller
     {
         private readonly DiscordManager _discordManager;
-        private readonly IMongoCollection<GuildSettings> _guildSettings;
+        private readonly TwitchManager _twitchManager;
+        private readonly IAsyncDocumentSession _session;
 
-        public ChatController(DiscordManager discordManager, IConfiguration config, IMongoDatabase database)
+        public ChatController(DiscordManager discordManager, IAsyncDocumentSession session, TwitchManager twitchManager)
         {
             _discordManager = discordManager;
-            _guildSettings = database.GetCollection<GuildSettings>(config["Secure:GuildSettings"]);
+            _session = session;
+            _twitchManager = twitchManager;
         }
 
         [HttpPost, Route("channelLive")]
         public async Task<IActionResult> ChannelLive([FromBody] StreamUpWebhook stream)
         {
-            var settings = await (await _guildSettings.FindAsync(s => s.TwitchSettings.UserId == Int32.Parse(stream.Data.FirstOrDefault().UserId))).FirstOrDefaultAsync();
+            if (stream == null) return BadRequest();
 
-            if (stream == null) return Ok();
+            using (_session)
+            {
+                var settings = await _session.Query<GuildSettings>().FirstOrDefaultAsync(s => s.TwitchSettings.UserId == stream.Data.FirstOrDefault().UserId);
 
-            if (settings.TwitchSettings.WebhookDiscordChannel != null)
-                await _discordManager.SendMessage((ulong) settings.TwitchSettings.WebhookDiscordChannel,
-                    settings.TwitchSettings.WebhookMessage);
+                if (settings.TwitchSettings.DiscordWebhookChannel != null)
+                    await _discordManager.SendMessage(settings.TwitchSettings.DiscordWebhookChannel.Id, settings.TwitchSettings.WebhookMessage);
+
+                await _twitchManager.SubToChannelLiveWebhook(settings.TwitchSettings.UserId);
+            }
 
             return Ok();
         }
