@@ -1,19 +1,89 @@
 {
   "runtimeTarget": {
     "name": ".NETCoreApp,Version=v2.1",
-    "signature": "ea86e09d289a450a9ff8a45daf714408bb67fb72"
+    "signature": "a5a758d501da21dda5a40b25a66c03d1762de291"
   },
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v2.1": {
       "Models/1.0.0": {
         "dependencies": {
+          "Discord.Net": "2.0.0-beta2-00981",
           "RavenDB.Identity": "4.3.0",
           "TwitchLib": "2.1.5",
           "Microsoft.Extensions.Identity.Stores": "2.0.2.0"
         },
         "runtime": {
           "Models.dll": {}
+        }
+      },
+      "Discord.Net/2.0.0-beta2-00981": {
+        "dependencies": {
+          "Discord.Net.Commands": "2.0.0-beta2-00981",
+          "Discord.Net.Core": "2.0.0-beta2-00981",
+          "Discord.Net.Rest": "2.0.0-beta2-00981",
+          "Discord.Net.WebSocket": "2.0.0-beta2-00981",
+          "Discord.Net.Webhook": "2.0.0-beta2-00981"
+        }
+      },
+      "Discord.Net.Commands/2.0.0-beta2-00981": {
+        "dependencies": {
+          "Discord.Net.Core": "2.0.0-beta2-00981",
+          "Microsoft.Extensions.DependencyInjection": "2.0.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Discord.Net.Commands.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.0.0"
+          }
+        }
+      },
+      "Discord.Net.Core/2.0.0-beta2-00981": {
+        "dependencies": {
+          "Newtonsoft.Json": "11.0.2",
+          "System.Collections.Immutable": "1.3.1",
+          "System.Interactive.Async": "3.1.1"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Discord.Net.Core.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.0.0"
+          }
+        }
+      },
+      "Discord.Net.Rest/2.0.0-beta2-00981": {
+        "dependencies": {
+          "Discord.Net.Core": "2.0.0-beta2-00981"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Discord.Net.Rest.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.0.0"
+          }
+        }
+      },
+      "Discord.Net.Webhook/2.0.0-beta2-00981": {
+        "dependencies": {
+          "Discord.Net.Core": "2.0.0-beta2-00981",
+          "Discord.Net.Rest": "2.0.0-beta2-00981"
+        },
+        "runtime": {
+          "lib/netstandard1.3/Discord.Net.Webhook.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.0.0"
+          }
+        }
+      },
+      "Discord.Net.WebSocket/2.0.0-beta2-00981": {
+        "dependencies": {
+          "Discord.Net.Core": "2.0.0-beta2-00981",
+          "Discord.Net.Rest": "2.0.0-beta2-00981"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Discord.Net.WebSocket.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.0.0"
+          }
         }
       },
       "Microsoft.AspNetCore.Authentication/2.0.1": {
@@ -384,18 +454,18 @@
           }
         }
       },
-      "Newtonsoft.Json/11.0.1": {
+      "Newtonsoft.Json/11.0.2": {
         "runtime": {
           "lib/netstandard2.0/Newtonsoft.Json.dll": {
             "assemblyVersion": "11.0.0.0",
-            "fileVersion": "11.0.1.21818"
+            "fileVersion": "11.0.2.21924"
           }
         }
       },
       "RavenDB.Client/4.0.0": {
         "dependencies": {
           "Microsoft.CSharp": "4.4.1",
-          "Newtonsoft.Json": "11.0.1",
+          "Newtonsoft.Json": "11.0.2",
           "System.Buffers": "4.4.0",
           "System.Runtime.CompilerServices.Unsafe": "4.4.0",
           "System.Security.Cryptography.Cng": "4.4.0",
@@ -610,6 +680,18 @@
           "System.Threading.Tasks": "4.3.0"
         }
       },
+      "System.Collections.Immutable/1.3.1": {
+        "dependencies": {
+          "System.Collections": "4.3.0",
+          "System.Diagnostics.Debug": "4.3.0",
+          "System.Globalization": "4.3.0",
+          "System.Linq": "4.3.0",
+          "System.Resources.ResourceManager": "4.3.0",
+          "System.Runtime": "4.3.0",
+          "System.Runtime.Extensions": "4.3.0",
+          "System.Threading": "4.3.0"
+        }
+      },
       "System.Collections.NonGeneric/4.3.0": {
         "dependencies": {
           "System.Diagnostics.Debug": "4.3.0",
@@ -697,6 +779,14 @@
           "runtime/win/lib/_._": {
             "rid": "win",
             "assetType": "runtime"
+          }
+        }
+      },
+      "System.Interactive.Async/3.1.1": {
+        "runtime": {
+          "lib/netstandard1.3/System.Interactive.Async.dll": {
+            "assemblyVersion": "3.0.3000.0",
+            "fileVersion": "3.1.1.0"
           }
         }
       },
@@ -1235,7 +1325,7 @@
       },
       "TwitchLib.Api/2.1.3": {
         "dependencies": {
-          "Newtonsoft.Json": "11.0.1",
+          "Newtonsoft.Json": "11.0.2",
           "Serilog.Extensions.Logging": "2.0.2",
           "System.Net.Http": "4.3.3",
           "TwitchLib.Api.Enums": "1.0.0",
@@ -1251,7 +1341,7 @@
       },
       "TwitchLib.Api.Enums/1.0.0": {
         "dependencies": {
-          "Newtonsoft.Json": "11.0.1"
+          "Newtonsoft.Json": "11.0.2"
         },
         "runtime": {
           "lib/netstandard2.0/TwitchLib.Api.Enums.dll": {
@@ -1262,7 +1352,7 @@
       },
       "TwitchLib.Api.Interfaces/1.0.0": {
         "dependencies": {
-          "Newtonsoft.Json": "11.0.1",
+          "Newtonsoft.Json": "11.0.2",
           "TwitchLib.Api.Enums": "1.0.0"
         },
         "runtime": {
@@ -1274,7 +1364,7 @@
       },
       "TwitchLib.Api.Models/1.0.0": {
         "dependencies": {
-          "Newtonsoft.Json": "11.0.1",
+          "Newtonsoft.Json": "11.0.2",
           "TwitchLib.Api.Enums": "1.0.0",
           "TwitchLib.Api.Interfaces": "1.0.0"
         },
@@ -1320,7 +1410,7 @@
       },
       "TwitchLib.PubSub/2.0.3": {
         "dependencies": {
-          "Newtonsoft.Json": "11.0.1",
+          "Newtonsoft.Json": "11.0.2",
           "Serilog.Extensions.Logging": "2.0.2",
           "WebSocket4Net": "0.15.2"
         },
@@ -1363,6 +1453,48 @@
       "type": "project",
       "serviceable": false,
       "sha512": ""
+    },
+    "Discord.Net/2.0.0-beta2-00981": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-LEu2jBSFizAt5ce5doEFH9flE6ONUbYrmGUz2Xu8GQkiB2BeayC23yAVXNCQvrjimdXH9aOC50dfuzAs4H+zFQ==",
+      "path": "discord.net/2.0.0-beta2-00981",
+      "hashPath": "discord.net.2.0.0-beta2-00981.nupkg.sha512"
+    },
+    "Discord.Net.Commands/2.0.0-beta2-00981": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-714p7BgS8X9KaLzfIZaF6OUX0E2a1tm1IbWCrKgWoOTv3cAg/y/R4/4acYx0Jepw+6mQIhPfCbToKFAifzB8KQ==",
+      "path": "discord.net.commands/2.0.0-beta2-00981",
+      "hashPath": "discord.net.commands.2.0.0-beta2-00981.nupkg.sha512"
+    },
+    "Discord.Net.Core/2.0.0-beta2-00981": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-kR1tqanFxAQgFXdM1FomdwipFGRAbQXw3gobX24EWrnddnUD7tNofERhCIinEi3SeIBQs0Ovf8brnwymnbYKfQ==",
+      "path": "discord.net.core/2.0.0-beta2-00981",
+      "hashPath": "discord.net.core.2.0.0-beta2-00981.nupkg.sha512"
+    },
+    "Discord.Net.Rest/2.0.0-beta2-00981": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-LRFcgx/CR+TyhrdDqAd4O/kmGzyWyIt4DIPnzbha3A8VgMiVzkOuBzk7kvBaemvapO5X3eAg76Nm3NZLQg8osQ==",
+      "path": "discord.net.rest/2.0.0-beta2-00981",
+      "hashPath": "discord.net.rest.2.0.0-beta2-00981.nupkg.sha512"
+    },
+    "Discord.Net.Webhook/2.0.0-beta2-00981": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-kCD9zf+ZjsIwWh1zX0LCX5Ov4QUobGpofEcQIbvqPSlSCy+yUSHziTmNHxWFPrXYaDOxX6xqyjflSdeifHjajQ==",
+      "path": "discord.net.webhook/2.0.0-beta2-00981",
+      "hashPath": "discord.net.webhook.2.0.0-beta2-00981.nupkg.sha512"
+    },
+    "Discord.Net.WebSocket/2.0.0-beta2-00981": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-KyuYQrjCNggTjjX6DRX3Xs9C4FhlatZVfP7iDqRoMnK+7NlP8oChiI/nQtoTuSwFRyq3boMHKgew2BuTLCwSIQ==",
+      "path": "discord.net.websocket/2.0.0-beta2-00981",
+      "hashPath": "discord.net.websocket.2.0.0-beta2-00981.nupkg.sha512"
     },
     "Microsoft.AspNetCore.Authentication/2.0.1": {
       "type": "package",
@@ -1588,12 +1720,12 @@
       "path": "microsoft.win32.registry/4.4.0",
       "hashPath": "microsoft.win32.registry.4.4.0.nupkg.sha512"
     },
-    "Newtonsoft.Json/11.0.1": {
+    "Newtonsoft.Json/11.0.2": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-pNN4l+J6LlpIvHOeNdXlwxv39NPJ2B5klz+Rd2UQZIx30Squ5oND1Yy3wEAUoKn0GPUj6Yxt9lxlYWQqfZcvKg==",
-      "path": "newtonsoft.json/11.0.1",
-      "hashPath": "newtonsoft.json.11.0.1.nupkg.sha512"
+      "sha512": "sha512-IvJe1pj7JHEsP8B8J8DwlMEx8UInrs/x+9oVY+oCD13jpLu4JbJU2WCIsMRn5C4yW9+DgkaO8uiVE5VHKjpmdQ==",
+      "path": "newtonsoft.json/11.0.2",
+      "hashPath": "newtonsoft.json.11.0.2.nupkg.sha512"
     },
     "RavenDB.Client/4.0.0": {
       "type": "package",
@@ -1763,6 +1895,13 @@
       "path": "system.collections.concurrent/4.3.0",
       "hashPath": "system.collections.concurrent.4.3.0.nupkg.sha512"
     },
+    "System.Collections.Immutable/1.3.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-n+AGX7zmiZumW9aggOkXaHzUeAS3EfeTErnkKCusyONUozbTv+kMb8VE36m+ldV6kF9g57G2c641KCdgH9E0pg==",
+      "path": "system.collections.immutable/1.3.1",
+      "hashPath": "system.collections.immutable.1.3.1.nupkg.sha512"
+    },
     "System.Collections.NonGeneric/4.3.0": {
       "type": "package",
       "serviceable": true,
@@ -1832,6 +1971,13 @@
       "sha512": "sha512-FhKmdR6MPG+pxow6wGtNAWdZh7noIOpdD5TwQ3CprzgIE1bBBoim0vbR1+AWsWjQmU7zXHgQo4TWSP6lCeiWcQ==",
       "path": "system.globalization.extensions/4.3.0",
       "hashPath": "system.globalization.extensions.4.3.0.nupkg.sha512"
+    },
+    "System.Interactive.Async/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-hZccYiIE5RS1/J9Tb/BNtosAGVggdlsJm4Ojdu+gDV0p4AIi+LUfUogMKkRacljQEJd2AG6vYzvcjhQFkqoZmw==",
+      "path": "system.interactive.async/3.1.1",
+      "hashPath": "system.interactive.async.3.1.1.nupkg.sha512"
     },
     "System.IO/4.3.0": {
       "type": "package",

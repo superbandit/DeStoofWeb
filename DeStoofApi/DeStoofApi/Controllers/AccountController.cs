@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
+using DeStoofApi.View.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Models.View.Users;
+using Raven.Identity;
 
 
 namespace DeStoofApi.Controllers

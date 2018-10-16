@@ -5,7 +5,13 @@ VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeStoofApi", "DeStoofApi\DeStoofApi.csproj", "{24D4C7FB-5447-499E-8657-C7C9C3F077A1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Models", "Models\Models.csproj", "{63F1A5B2-E53A-4E47-A87E-4B00F19FCEC4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Core\Core.csproj", "{87845BA1-2976-480A-B679-B21482093372}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Discord", "Discord\Discord.csproj", "{70E8B787-5FB2-4446-B0FB-247D9E439583}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeStoofBot", "Shared\DeStoofBot.csproj", "{38501A36-F76D-48A0-ADF3-41B105E0E77D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twitch", "Twitch\Twitch.csproj", "{453BC492-C01B-4730-BFD5-FC71E93271B0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +23,22 @@ Global
 		{24D4C7FB-5447-499E-8657-C7C9C3F077A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{24D4C7FB-5447-499E-8657-C7C9C3F077A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{24D4C7FB-5447-499E-8657-C7C9C3F077A1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{63F1A5B2-E53A-4E47-A87E-4B00F19FCEC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{63F1A5B2-E53A-4E47-A87E-4B00F19FCEC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{63F1A5B2-E53A-4E47-A87E-4B00F19FCEC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{63F1A5B2-E53A-4E47-A87E-4B00F19FCEC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87845BA1-2976-480A-B679-B21482093372}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87845BA1-2976-480A-B679-B21482093372}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87845BA1-2976-480A-B679-B21482093372}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87845BA1-2976-480A-B679-B21482093372}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70E8B787-5FB2-4446-B0FB-247D9E439583}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70E8B787-5FB2-4446-B0FB-247D9E439583}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70E8B787-5FB2-4446-B0FB-247D9E439583}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70E8B787-5FB2-4446-B0FB-247D9E439583}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38501A36-F76D-48A0-ADF3-41B105E0E77D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38501A36-F76D-48A0-ADF3-41B105E0E77D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38501A36-F76D-48A0-ADF3-41B105E0E77D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38501A36-F76D-48A0-ADF3-41B105E0E77D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{453BC492-C01B-4730-BFD5-FC71E93271B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{453BC492-C01B-4730-BFD5-FC71E93271B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{453BC492-C01B-4730-BFD5-FC71E93271B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{453BC492-C01B-4730-BFD5-FC71E93271B0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

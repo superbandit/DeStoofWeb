@@ -1,18 +1,22 @@
-﻿using DeStoofApi.Chatsources.Discord;
+﻿using Core.Serializers;
+using DeStoofBot;
+using DeStoofBot.CustomCommands;
+using DeStoofBot.DiscordCommands;
+using DeStoofBot.DiscordCommands.Modules;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
-using DeStoofApi.Services;
-using DeStoofApi.Chatsources.Twitch;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Models.Domain.Users;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Identity;
+using Twitch;
 using TwitchLib.Client;
+using TwitchLib.Client.Interfaces;
 
 namespace DeStoofApi
 {
@@ -50,17 +54,17 @@ namespace DeStoofApi
             services.AddScoped(s => documentStore.OpenAsyncSession());
 
             services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig {AlwaysDownloadUsers = true}));
+            services.AddSingleton<DiscordEventHandler>();
             services.AddSingleton<DiscordManager>();
-            services.AddSingleton<DiscordCommandHandler>();
-
             services.AddSingleton<CommandService>();
+            services.AddScoped<DiscordCommandHandler>();
+            services.AddScoped<DiscordGuildEventHandler>();
 
-            services.AddSingleton<TwitchClient>();
+            services.AddSingleton<ITwitchClient, TwitchClient>();
             services.AddSingleton<TwitchManager>();
-            services.AddSingleton<TwitchCommandHandler>();
 
+            services.AddSingleton<MessageService>();
             services.AddScoped<LoggingService>();
-            services.AddScoped<MessageService>();
             services.AddScoped<CustomCommandService>();
 
             services.AddRavenDbIdentity<ApplicationUser>();
@@ -74,22 +78,27 @@ namespace DeStoofApi
                 options.Password.RequireUppercase = false;
             });
 
-            services.AddMvc();
+            services.AddMvc().AddJsonOptions(o =>
+            {
+                o.SerializerSettings.Converters.Add(new SnowflakeConverter());
+            });
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            app.UseDeveloperExceptionPage();
-            app.UseStaticFiles();
-
             app.UseAuthentication();
 
             app.UseCors("CorsPolicy");            
 
             app.UseMvc();
 
+            app.ApplicationServices.GetRequiredService<DiscordManager>().RunBotAsync().GetAwaiter().GetResult();
+            app.ApplicationServices.GetRequiredService<CommandService>().AddModulesAsync(typeof(HelpCommands).Assembly, app.ApplicationServices).GetAwaiter().GetResult();
+
+            // Have classes listening to events.
             app.ApplicationServices.GetRequiredService<TwitchManager>().Start();
-            app.ApplicationServices.GetRequiredService<DiscordManager>().RunBotAsync().Wait();
+            app.ApplicationServices.GetRequiredService<DiscordEventHandler>();
+            app.ApplicationServices.GetRequiredService<MessageService>();
         }
     }
 }
