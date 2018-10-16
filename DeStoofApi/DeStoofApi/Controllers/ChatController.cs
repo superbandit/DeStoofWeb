@@ -1,12 +1,11 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using DeStoofApi.Chatsources.Discord;
-using DeStoofApi.Chatsources.Twitch;
+using Core.Settings;
+using DeStoofApi.View.External;
+using Discord;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Models.Domain.Guilds;
-using Models.View.External;
-using Raven.Client.Documents.Session;
+using Raven.Client.Documents;
+using Twitch;
 
 namespace DeStoofApi.Controllers
 {
@@ -15,13 +14,13 @@ namespace DeStoofApi.Controllers
     {
         private readonly DiscordManager _discordManager;
         private readonly TwitchManager _twitchManager;
-        private readonly IAsyncDocumentSession _session;
+        private readonly IDocumentStore _documentStore;
 
-        public ChatController(DiscordManager discordManager, IAsyncDocumentSession session, TwitchManager twitchManager)
+        public ChatController(DiscordManager discordManager, TwitchManager twitchManager, IDocumentStore documentStore)
         {
             _discordManager = discordManager;
-            _session = session;
             _twitchManager = twitchManager;
+            _documentStore = documentStore;
         }
 
         [HttpPost, Route("channelLive")]
@@ -29,9 +28,9 @@ namespace DeStoofApi.Controllers
         {
             if (stream == null) return BadRequest();
 
-            using (_session)
+            using (var session = _documentStore.OpenAsyncSession())
             {
-                var settings = await _session.Query<GuildSettings>().FirstOrDefaultAsync(s => s.TwitchSettings.UserId == stream.Data.FirstOrDefault().UserId);
+                var settings = await session.Query<GuildSettings>().FirstOrDefaultAsync(s => s.TwitchSettings.UserId == stream.Data.FirstOrDefault().UserId);
 
                 if (settings.TwitchSettings.DiscordWebhookChannel != null)
                     await _discordManager.SendMessage(settings.TwitchSettings.DiscordWebhookChannel.Id, settings.TwitchSettings.WebhookMessage);

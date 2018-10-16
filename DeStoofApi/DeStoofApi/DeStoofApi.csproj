@@ -19,11 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="2.0.0-beta2-00981" />
-    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.2" />
-    <PackageReference Include="RavenDB.Client" Version="4.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.1.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.1.2" />
+    <PackageReference Include="RavenDB.Client" Version="4.1.1" />
     <PackageReference Include="RavenDB.Identity" Version="4.3.0" />
-    <PackageReference Include="TwitchLib" Version="2.1.5" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,7 +30,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Models\Models.csproj" />
+    <ProjectReference Include="..\Discord\Discord.csproj" />
+    <ProjectReference Include="..\Shared\DeStoofBot.csproj" />
+    <ProjectReference Include="..\Twitch\Twitch.csproj" />
   </ItemGroup>
 
 </Project>

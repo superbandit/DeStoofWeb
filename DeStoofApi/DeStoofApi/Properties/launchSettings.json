@@ -17,7 +17,7 @@
       "launchBrowser": false,
       "launchUrl": "api/chat",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Production"
       },
       "use64Bit": false
     },
@@ -26,7 +26,7 @@
       "launchBrowser": false,
       "launchUrl": "api/chat",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Production"
       },
       "applicationUrl": "http://localhost:5000/"
     }
