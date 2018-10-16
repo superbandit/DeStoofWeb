@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
-using DeStoofApi.Models.Form;
+using DeStoofApi.View.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using IdentityUser = Microsoft.AspNetCore.Identity.MongoDB.IdentityUser;
+using Raven.Identity;
 
 
 namespace DeStoofApi.Controllers

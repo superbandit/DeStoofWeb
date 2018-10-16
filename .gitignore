@@ -20,8 +20,8 @@ node_modules/
 **/.vs
 
 # IDE - VS
-**/DeStoofApi/obj
-**/DeStoofApi/bin
+**/obj
+**/bin
 
 # IDE - VSCode
 .vscode/*

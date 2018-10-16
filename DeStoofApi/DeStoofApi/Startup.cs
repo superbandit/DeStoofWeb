@@ -1,18 +1,22 @@
-﻿using System;
-using DeStoofApi.Chatsources.Discord;
+﻿using Core.Serializers;
+using DeStoofBot;
+using DeStoofBot.CustomCommands;
+using DeStoofBot.DiscordCommands;
+using DeStoofBot.DiscordCommands.Modules;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
-using DeStoofApi.Controllers;
-using DeStoofApi.Services;
-using DeStoofApi.Chatsources.Twitch;
-using DeStoofApi.Hubs;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using MongoDB.Driver;
+using Raven.Client.Documents;
+using Raven.Client.Documents.Conventions;
+using Raven.Identity;
+using Twitch;
+using TwitchLib.Client;
+using TwitchLib.Client.Interfaces;
 
 namespace DeStoofApi
 {
@@ -23,12 +27,11 @@ namespace DeStoofApi
             Configuration = configuration;
         }
 
-        public IConfiguration Configuration { get; }
+        private IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
+
         public void ConfigureServices(IServiceCollection services)
         {
-
             services.AddCors(options => options.AddPolicy("CorsPolicy", builder => {
                 builder
                 .AllowAnyMethod()
@@ -36,13 +39,35 @@ namespace DeStoofApi
                 .WithOrigins("http://localhost:4200");
             }));
 
-            var mongoDb = new MongoClient($"{Configuration["Secure:DataBase"]}");
-            IMongoDatabase database = mongoDb.GetDatabase("DeStoofBot");
-            services.AddSingleton(database);
+            var documentStore = new DocumentStore
+            {
+                Urls = new []{Configuration["Secure:DataBaseUrl"]},
+                Database = Configuration["Secure:DataBaseName"],
+                Conventions = new DocumentConventions
+                {
+                    IdentityPartsSeparator = "/"
+                }
+            };
+            documentStore.Initialize();
 
-            services.AddIdentityWithMongoStores($"{Configuration["Secure:DataBase"]}")
-                .AddDefaultTokenProviders();
+            services.AddSingleton<IDocumentStore>(documentStore);
+            services.AddScoped(s => documentStore.OpenAsyncSession());
 
+            services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig {AlwaysDownloadUsers = true}));
+            services.AddSingleton<DiscordEventHandler>();
+            services.AddSingleton<DiscordManager>();
+            services.AddSingleton<CommandService>();
+            services.AddScoped<DiscordCommandHandler>();
+            services.AddScoped<DiscordGuildEventHandler>();
+
+            services.AddSingleton<ITwitchClient, TwitchClient>();
+            services.AddSingleton<TwitchManager>();
+
+            services.AddSingleton<MessageService>();
+            services.AddScoped<LoggingService>();
+            services.AddScoped<CustomCommandService>();
+
+            services.AddRavenDbIdentity<ApplicationUser>();
             services.Configure<IdentityOptions>(options =>
             {
                 options.Password.RequireDigit = false;
@@ -53,47 +78,27 @@ namespace DeStoofApi
                 options.Password.RequireUppercase = false;
             });
 
-            services.AddSignalR();
-
-            services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
+            services.AddMvc().AddJsonOptions(o =>
             {
-                LogLevel = LogSeverity.Info,
-                AlwaysDownloadUsers = true                
-            }));
-            services.AddSingleton<CommandService>();
-            services.AddSingleton<TwitchManager>();
-            services.AddSingleton<DiscordManager>();
-            services.AddSingleton<CommandHandler>();
-            services.AddSingleton<MessageService>();
-            services.AddSingleton<IServiceProvider>(services.BuildServiceProvider());
-
-            services.AddScoped<ChatController>();
-            services.AddTransient<LoggingService>();
-
-            services.AddMvc();
+                o.SerializerSettings.Converters.Add(new SnowflakeConverter());
+            });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            app.UseStaticFiles();
-
             app.UseAuthentication();
 
             app.UseCors("CorsPolicy");            
 
-            app.UseSignalR(routes => {
-                routes
-                .MapHub<ChatHub>("/chat");                
-            });
-
             app.UseMvc();
 
-            app.ApplicationServices.GetService<MessageService>().Startup().GetAwaiter().GetResult();
+            app.ApplicationServices.GetRequiredService<DiscordManager>().RunBotAsync().GetAwaiter().GetResult();
+            app.ApplicationServices.GetRequiredService<CommandService>().AddModulesAsync(typeof(HelpCommands).Assembly, app.ApplicationServices).GetAwaiter().GetResult();
+
+            // Have classes listening to events.
+            app.ApplicationServices.GetRequiredService<TwitchManager>().Start();
+            app.ApplicationServices.GetRequiredService<DiscordEventHandler>();
+            app.ApplicationServices.GetRequiredService<MessageService>();
         }
     }
 }
